@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   formTitle: { fontWeight: "bold", marginBottom: 10, fontSize: 16 },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#ddddddff",
     padding: 10,
     marginBottom: 8,
     borderRadius: 6,

@@ -4,7 +4,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import NTMHome from "./NTMHome";
 import BudgetScreen from "./BudgetScreen";
 import DashboardScreen from "./DashboardScreen";
-import { Text } from "react-native";
+import { LayoutDashboard, ListChecks, Wallet } from "lucide-react-native";
 
 const Tab = createBottomTabNavigator();
 
@@ -12,11 +12,23 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Tab.Navigator
-        screenOptions={{
+        screenOptions={({ route }) => ({
           headerShown: false,
           tabBarStyle: { backgroundColor: "#fff", height: 60 },
-          tabBarLabelStyle: { fontSize: 14, marginBottom: 5 },
-        }}
+          tabBarLabelStyle: { fontSize: 12 },
+          tabBarShowLabel: true,
+          tabBarActiveTintColor: "#2563eb", // bleu actif
+          tabBarInactiveTintColor: "gray", // gris inactif
+          tabBarIcon: ({ color }) => {
+            if (route.name === "Suivi") {
+              return <Wallet color={color} size={24} />;
+            } else if (route.name === "Budget") {
+              return <ListChecks color={color} size={24} />;
+            } else if (route.name === "Dashboard") {
+              return <LayoutDashboard color={color} size={24} />;
+            }
+          },
+        })}
       >
         <Tab.Screen name="Suivi" component={NTMHome} />
         <Tab.Screen name="Budget" component={BudgetScreen} />

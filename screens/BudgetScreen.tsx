@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from "react-native";
 export default function BudgetScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Écran Budget (à compléter)</Text>
+      <Text style={styles.text}>En Travaux</Text>
     </View>
   );
 }

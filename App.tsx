@@ -10,11 +10,14 @@ import NTMHome from "./screens/NTMHome";
 import BudgetScreen from "./screens/BudgetScreen";
 import DashboardScreen from "./screens/DashboardScreen";
 
+// Icônes
+import { LayoutDashboard, ListChecks, Wallet } from "lucide-react-native";
+
 // Types du Stack
-type RootStackParamList = {
+export type RootStackParamList = {
   Register: undefined;
   NTMWelcome: undefined;
-  NTMHome: undefined;
+  NTMHome: undefined; // correspond à AppNavigator
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -24,15 +27,24 @@ const Tab = createBottomTabNavigator();
 function AppNavigator() {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: { backgroundColor: "#fff", height: 60 },
-        tabBarLabelStyle: { fontSize: 14, marginBottom: 5 },
-      }}
+        tabBarLabelStyle: { fontSize: 12, marginBottom: 5 },
+        tabBarActiveTintColor: "#2563eb", // bleu actif
+        tabBarInactiveTintColor: "gray",  // gris inactif
+        tabBarShowLabel: true,
+        tabBarIcon: ({ color, size }) => {
+          if (route.name === "Suivi") return <Wallet color={color} size={24} />;
+          if (route.name === "Budget") return <ListChecks color={color} size={24} />;
+          if (route.name === "Dashboard") return <LayoutDashboard color={color} size={24} />;
+          return null;
+        },
+      })}
     >
-      <Tab.Screen name="Suivi" component={NTMHome} />
-      <Tab.Screen name="Budget" component={BudgetScreen} />
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
+      <Tab.Screen name="Suivi" component={NTMHome} options={{ tabBarLabel: "Suivi" }} />
+      <Tab.Screen name="Budget" component={BudgetScreen} options={{ tabBarLabel: "Budget" }} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarLabel: "Dashboard" }} />
     </Tab.Navigator>
   );
 }
@@ -42,22 +54,12 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Register">
-        <Stack.Screen
-          name="Register"
-          component={RegisterScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="NTMWelcome"
-          component={NTMWelcome}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="NTMHome"
-          component={AppNavigator} // <-- Bottom Tabs
-          options={{ headerShown: false }}
-        />
+        <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="NTMWelcome" component={NTMWelcome} options={{ headerShown: false }} />
+        <Stack.Screen name="NTMHome" component={AppNavigator} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+

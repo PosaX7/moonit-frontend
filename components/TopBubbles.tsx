@@ -10,7 +10,7 @@ type Props = {
 export default function TopBubbles({ totalRevenus, totalDepenses, solde }: Props) {
   // Fonction pour formater avec séparateur de milliers
   const formatMontant = (montant: number) =>
-    montant.toLocaleString("fr-FR", { minimumFractionDigits: 0 }) + " FCFA";
+    montant.toLocaleString("fr-FR", { minimumFractionDigits: 0 });
 
   return (
     <View style={styles.container}>
