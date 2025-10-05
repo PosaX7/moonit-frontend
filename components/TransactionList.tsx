@@ -46,7 +46,7 @@ const TransactionList: React.FC<Props> = ({ transactions }) => {
             <Text style={styles.col}>{item.id}</Text>
             <Text style={styles.col}>{item.libelle}</Text>
             <Text style={styles.col}>{item.categorie}</Text>
-            <Text style={styles.col}>{item.montant.toLocaleString()} FCFA</Text>
+            <Text style={styles.col}>{item.montant.toLocaleString()}</Text>
             <Text style={styles.col}>{formatDateFR(item.date)}</Text>
           </View>
         )}

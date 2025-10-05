@@ -1,10 +1,11 @@
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
-// Écrans
+// Screens
 import RegisterScreen from "./screens/RegisterScreen";
+import LoginScreen from "./screens/LoginScreen";
 import NTMWelcome from "./screens/NTMWelcome";
 import NTMHome from "./screens/NTMHome";
 import BudgetScreen from "./screens/BudgetScreen";
@@ -16,72 +17,75 @@ import { LayoutDashboard, ListChecks, Wallet } from "lucide-react-native";
 // Types du Stack
 export type RootStackParamList = {
   Register: undefined;
+  Login: undefined;
   NTMWelcome: undefined;
-  NTMHome: undefined; // correspond à AppNavigator
+  NTMHome: undefined; // correspond au TabNavigator
 };
 
-// Création du Stack Navigator
+// Navigators
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
-// Création du Bottom Tab Navigator
 const Tab = createBottomTabNavigator();
 
-// Bottom Tabs pour NTMHome
-function AppNavigator() {
+// --- Bottom Tabs : Navigation principale après connexion ---
+function AppTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: { backgroundColor: "#fff", height: 60 },
         tabBarLabelStyle: { fontSize: 12, marginBottom: 5 },
-        tabBarActiveTintColor: "#2563eb", // bleu actif
-        tabBarInactiveTintColor: "gray", // gris inactif
+        tabBarActiveTintColor: "#2563eb",
+        tabBarInactiveTintColor: "gray",
         tabBarShowLabel: true,
         tabBarIcon: ({ color }) => {
-          if (route.name === "Suivi") return <Wallet color={color} size={24} />;
-          if (route.name === "Budget") return <ListChecks color={color} size={24} />;
-          if (route.name === "Dashboard") return <LayoutDashboard color={color} size={24} />;
-          return null;
+          switch (route.name) {
+            case "Suivi":
+              return <Wallet color={color} size={24} />;
+            case "Budget":
+              return <ListChecks color={color} size={24} />;
+            case "Dashboard":
+              return <LayoutDashboard color={color} size={24} />;
+            default:
+              return null;
+          }
         },
       })}
     >
-      <Tab.Screen
-        name="Suivi"
-        component={NTMHome}
-        options={{ tabBarLabel: "Suivi" }}
-      />
-      <Tab.Screen
-        name="Budget"
-        component={BudgetScreen}
-        options={{ tabBarLabel: "Budget" }}
-      />
-      <Tab.Screen
-        name="Dashboard"
-        component={DashboardScreen}
-        options={{ tabBarLabel: "Dashboard" }}
-      />
+      <Tab.Screen name="Suivi" component={NTMHome} options={{ tabBarLabel: "Suivi" }} />
+      <Tab.Screen name="Budget" component={BudgetScreen} options={{ tabBarLabel: "Budget" }} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarLabel: "Dashboard" }} />
     </Tab.Navigator>
   );
 }
 
-// App principale
+// --- App principale ---
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Register">
+      <Stack.Navigator initialRouteName="Login">
+        {/* Auth Screens */}
         <Stack.Screen
           name="Register"
           component={RegisterScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ headerShown: false }}
+        />
+
+        {/* Écran de bienvenue (optionnel) */}
+        <Stack.Screen
           name="NTMWelcome"
           component={NTMWelcome}
           options={{ headerShown: false }}
         />
+
+        {/* Accès principal après connexion */}
         <Stack.Screen
           name="NTMHome"
-          component={AppNavigator}
+          component={AppTabs}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

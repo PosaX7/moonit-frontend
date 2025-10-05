@@ -1,40 +1,37 @@
-// src/screens/RegisterScreen.tsx
+// src/screens/LoginScreen.tsx
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
-import { registerUser } from "../services/api";
+import { loginUser } from "../services/api";
 
-export default function RegisterScreen({ navigation }: any) {
+export default function LoginScreen({ navigation }: any) {
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleRegister = async () => {
+  const handleLogin = async () => {
     try {
-      await registerUser(username, email, password);
-      Alert.alert("Succès", "Compte créé avec succès !");
-      navigation.navigate("Login");
-    } catch (error: any) {
+      const res = await loginUser(username, password);
+      if (res.access) {
+        Alert.alert("Bienvenue !", "Connexion réussie");
+        navigation.replace("NTMHome"); // redirige vers la page principale
+      } else {
+        Alert.alert("Erreur", "Identifiants incorrects");
+      }
+    } catch (error) {
       console.error(error);
-      Alert.alert("Erreur", "Impossible de créer le compte. Vérifie tes infos.");
+      Alert.alert("Erreur", "Connexion échouée. Vérifie tes identifiants.");
     }
   };
 
   return (
     <View style={{ flex: 1, justifyContent: "center", padding: 20 }}>
       <Text style={{ fontSize: 28, fontWeight: "bold", marginBottom: 20 }}>
-        Inscription
+        Connexion
       </Text>
 
       <TextInput
         placeholder="Nom d'utilisateur"
         value={username}
         onChangeText={setUsername}
-        style={{ borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 15 }}
-      />
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
         style={{ borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 15 }}
       />
       <TextInput
@@ -46,17 +43,17 @@ export default function RegisterScreen({ navigation }: any) {
       />
 
       <TouchableOpacity
-        onPress={handleRegister}
-        style={{ backgroundColor: "#007bff", padding: 15, borderRadius: 8 }}
+        onPress={handleLogin}
+        style={{ backgroundColor: "#28a745", padding: 15, borderRadius: 8 }}
       >
         <Text style={{ color: "white", textAlign: "center", fontWeight: "bold" }}>
-          S'inscrire
+          Se connecter
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+      <TouchableOpacity onPress={() => navigation.navigate("Register")}>
         <Text style={{ textAlign: "center", marginTop: 15 }}>
-          Déjà un compte ? Se connecter
+          Pas encore de compte ? S’inscrire
         </Text>
       </TouchableOpacity>
     </View>
