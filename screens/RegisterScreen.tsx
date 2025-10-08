@@ -1,7 +1,7 @@
-// src/screens/RegisterScreen.tsx
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { registerUser } from "../services/api";
+import { showMessage } from "react-native-flash-message"; // 👈 import
 
 export default function RegisterScreen({ navigation }: any) {
   const [username, setUsername] = useState("");
@@ -11,11 +11,22 @@ export default function RegisterScreen({ navigation }: any) {
   const handleRegister = async () => {
     try {
       await registerUser(username, email, password);
-      Alert.alert("Succès", "Compte créé avec succès !");
+      showMessage({
+        message: "Compte créé avec succès 🎉",
+        description: "Tu peux maintenant te connecter.",
+        type: "success", // ✅ vert
+        icon: "success",
+        duration: 3000,
+      });
       navigation.navigate("Login");
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
-      Alert.alert("Erreur", "Impossible de créer le compte. Vérifie tes infos.");
+      showMessage({
+        message: "Erreur d'inscription ❌",
+        description: "Vérifie tes informations.",
+        type: "danger", // ❌ rouge
+        icon: "danger",
+      });
     }
   };
 

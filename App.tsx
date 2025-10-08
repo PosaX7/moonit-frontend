@@ -2,6 +2,7 @@ import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import FlashMessage from "react-native-flash-message";
 
 // Screens
 import RegisterScreen from "./screens/RegisterScreen";
@@ -61,34 +62,39 @@ function AppTabs() {
 // --- App principale ---
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Login">
-        {/* Auth Screens */}
-        <Stack.Screen
-          name="Register"
-          component={RegisterScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{ headerShown: false }}
-        />
+    <>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Login">
+          {/* Auth Screens */}
+          <Stack.Screen
+            name="Register"
+            component={RegisterScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{ headerShown: false }}
+          />
 
-        {/* Écran de bienvenue (optionnel) */}
-        <Stack.Screen
-          name="NTMWelcome"
-          component={NTMWelcome}
-          options={{ headerShown: false }}
-        />
+          {/* Écran de bienvenue (optionnel) */}
+          <Stack.Screen
+            name="NTMWelcome"
+            component={NTMWelcome}
+            options={{ headerShown: false }}
+          />
 
-        {/* Accès principal après connexion */}
-        <Stack.Screen
-          name="NTMHome"
-          component={AppTabs}
-          options={{ headerShown: false }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+          {/* Accès principal après connexion */}
+          <Stack.Screen
+            name="NTMHome"
+            component={AppTabs}
+            options={{ headerShown: false }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+
+      {/* ✅ FlashMessage placé ici, global à toute l’app */}
+      <FlashMessage position="top" />
+    </>
   );
 }
