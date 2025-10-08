@@ -7,6 +7,7 @@ export const API_URL = "https://moonit-backend-10.onrender.com/api/auth";
 // ---- Types ----
 export interface Transaction {
   id: number;
+  local_id: number;
   libelle: string;
   montant: number;
   categorie: string;

@@ -12,7 +12,6 @@ const formatDateFR = (isoDate: string) => {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
   });
 };
 
@@ -21,6 +20,14 @@ interface Props {
 }
 
 const TransactionList: React.FC<Props> = ({ transactions }) => {
+  // 🔹 On trie les transactions par date décroissante
+  // 🔹 La transaction initiale (local_id = 0) reste en bas
+  const sortedTransactions = [...transactions].sort((a, b) => {
+    if (a.local_id === 0) return 1; // NoTiMo à la fin
+    if (b.local_id === 0) return -1;
+    return new Date(b.date).getTime() - new Date(a.date).getTime(); // plus récente en haut
+  });
+
   return (
     <View>
       {/* Header du tableau */}
@@ -34,16 +41,20 @@ const TransactionList: React.FC<Props> = ({ transactions }) => {
 
       {/* Liste des transactions */}
       <FlatList
-        data={transactions}
+        data={sortedTransactions}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View
             style={[
               styles.tableRow,
-              item.type === "depense" ? styles.rowDepense : styles.rowRevenu,
+              item.local_id === 0
+                ? styles.rowInitial
+                : item.type === "depense"
+                ? styles.rowDepense
+                : styles.rowRevenu,
             ]}
           >
-            <Text style={styles.col}>{item.id}</Text>
+            <Text style={styles.col}>{item.local_id}</Text>
             <Text style={styles.col}>{item.libelle}</Text>
             <Text style={styles.col}>{item.categorie}</Text>
             <Text style={styles.col}>{item.montant.toLocaleString()}</Text>
@@ -72,7 +83,8 @@ const styles = StyleSheet.create({
   },
   col: { flex: 1, textAlign: "center" },
   rowDepense: { backgroundColor: "#ffe5e5" }, // rouge clair
-  rowRevenu: { backgroundColor: "#e5ffe5" }, // vert clair
+  rowRevenu: { backgroundColor: "#e5ffe5" },  // vert clair
+  rowInitial: { backgroundColor: "#f0f0f0" }, // gris clair pour NoTiMo
 });
 
 export default TransactionList;
