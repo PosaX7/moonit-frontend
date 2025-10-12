@@ -11,6 +11,8 @@ import NTMWelcome from "./screens/NTMWelcome";
 import NTMHome from "./screens/NTMHome";
 import BudgetScreen from "./screens/BudgetScreen";
 import DashboardScreen from "./screens/DashboardScreen";
+import HistoriqueLibelle from "./screens/HistoriqueLibelle";
+import HistoriqueCategorie from "./screens/HistoriqueCategorie";
 
 // Icônes
 import { LayoutDashboard, ListChecks, Wallet } from "lucide-react-native";
@@ -21,6 +23,8 @@ export type RootStackParamList = {
   Login: undefined;
   NTMWelcome: undefined;
   NTMHome: undefined; // correspond au TabNavigator
+  HistoriqueLibelle: { libelle: string };
+  HistoriqueCategorie: { categorie: string };
 };
 
 // Navigators
@@ -90,10 +94,22 @@ export default function App() {
             component={AppTabs}
             options={{ headerShown: false }}
           />
+
+          {/* 🔹 Nouveaux écrans pour l’historique */}
+          <Stack.Screen
+            name="HistoriqueLibelle"
+            component={HistoriqueLibelle}
+            options={{ title: "Historique par Libellé" }}
+          />
+          <Stack.Screen
+            name="HistoriqueCategorie"
+            component={HistoriqueCategorie}
+            options={{ title: "Historique par Catégorie" }}
+          />
         </Stack.Navigator>
       </NavigationContainer>
 
-      {/* ✅ FlashMessage placé ici, global à toute l’app */}
+      {/* ✅ FlashMessage global */}
       <FlashMessage position="top" />
     </>
   );
