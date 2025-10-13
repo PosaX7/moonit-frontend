@@ -15,21 +15,21 @@ export default function TopBubbles({ totalRevenus, totalDepenses, solde }: Props
   return (
     <View style={styles.container}>
       {/* Solde */}
-      <View style={[styles.bubble, styles.solde]}>
+      <View style={[styles.row, styles.solde]}>
         <Text style={styles.label}>Solde</Text>
         <Text style={styles.amount}>{formatMontant(solde)}</Text>
       </View>
 
-      {/* Dépenses */}
-      <View style={[styles.bubble, styles.depenses]}>
-        <Text style={styles.label}>Dépenses</Text>
-        <Text style={styles.amount}>{formatMontant(totalDepenses)}</Text>
-      </View>
-
       {/* Revenus */}
-      <View style={[styles.bubble, styles.revenus]}>
+      <View style={[styles.row, styles.revenus]}>
         <Text style={styles.label}>Revenus</Text>
         <Text style={styles.amount}>{formatMontant(totalRevenus)}</Text>
+      </View>
+
+      {/* Dépenses */}
+      <View style={[styles.row, styles.depenses]}>
+        <Text style={styles.label}>Dépenses</Text>
+        <Text style={styles.amount}>{formatMontant(totalDepenses)}</Text>
       </View>
     </View>
   );
@@ -37,63 +37,52 @@ export default function TopBubbles({ totalRevenus, totalDepenses, solde }: Props
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     marginVertical: 20,
     paddingHorizontal: 10,
     gap: 12,
   },
-  bubble: {
-    flex: 1,
-    padding: 20,
-    borderRadius: 20,
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    justifyContent: "center",
+    padding: 16,
+    borderRadius: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
     borderWidth: 1,
-    minHeight: 110,
   },
   label: {
-    color: "rgba(255, 255, 255, 0.8)",
+    color: "rgba(255, 255, 255, 0.9)",
     fontWeight: "600",
-    fontSize: 13,
-    marginBottom: 8,
+    fontSize: 15,
     textTransform: "uppercase",
-    letterSpacing: 1.2,
+    letterSpacing: 1,
   },
   amount: {
     color: "#fff",
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "bold",
     letterSpacing: 0.5,
-    marginBottom: 4,
   },
-  currency: {
-    color: "rgba(255, 255, 255, 0.6)",
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 1,
-  },
-  // Solde - Dégradé violet/bleu (aligné sur le header)
+  // Solde - Violet/bleu foncé
   solde: {
     backgroundColor: "#0c0c10ff",
     borderColor: "#0c0c10ff",
     shadowColor: "#0c0c10ff",
   },
-  // Dépenses - Dégradé rouge sombre
-  depenses: {
-    backgroundColor: "#dc2626",
-    borderColor: "#ef4444",
-    shadowColor: "#dc2626",
-  },
-  // Revenus - Dégradé vert
+  // Revenus - Vert
   revenus: {
     backgroundColor: "#059669",
     borderColor: "#10b981",
     shadowColor: "#059669",
+  },
+  // Dépenses - Rouge
+  depenses: {
+    backgroundColor: "#dc2626",
+    borderColor: "#ef4444",
+    shadowColor: "#dc2626",
   },
 });
