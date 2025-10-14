@@ -1,6 +1,6 @@
 // screens/NTMHome.tsx
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Text, ScrollView } from "react-native";
 import { fetchTransactions, Transaction, deleteTransaction } from "../services/api";
 import AddTransaction from "../components/AddTransaction";
 import Header from "../components/Header";
@@ -102,51 +102,59 @@ export default function NTMHome() {
     setToast((prev) => ({ ...prev, visible: false }));
   };
 
-  const { totalRevenus, totalDepenses, solde } = useSolde(filteredTransactions); // ✅ Utilise filteredTransactions
+  const { totalRevenus, totalDepenses, solde } = useSolde(filteredTransactions);
 
   return (
     <View style={styles.container}>
       <Header title="NoTiMo" />
-      <TopBubbles totalRevenus={totalRevenus} totalDepenses={totalDepenses} solde={solde} />
+      
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
+      >
+        <TopBubbles totalRevenus={totalRevenus} totalDepenses={totalDepenses} solde={solde} />
 
-      {/* Boutons Dépenses / Revenus */}
-      <View style={styles.headerButtons}>
-        <TouchableOpacity
-          style={[styles.btn, showForm === "depense" && styles.btnActiveDepense]}
-          onPress={() => setShowForm(showForm === "depense" ? null : "depense")}
-        >
-          <Text style={styles.btnText}>Ajouter une sortie d'argent (Dépense)</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.btn, showForm === "revenu" && styles.btnActiveRevenu]}
-          onPress={() => setShowForm(showForm === "revenu" ? null : "revenu")}
-        >
-          <Text style={styles.btnText}>Ajouter une entrée d'argent (Revenu)</Text>
-        </TouchableOpacity>
-      </View>
-
-      {showForm && <AddTransaction type={showForm} onAdded={handleAdded} onClose={() => setShowForm(null)} />}
-
-      {/* ✅ Affichage des filtres actifs */}
-      {(filters.libelle || filters.categorie) && (
-        <View style={styles.filterContainer}>
-          <Text style={styles.filterText}>
-            🔍 Filtre actif: {filters.libelle && `Libellé: ${filters.libelle}`}
-            {filters.categorie && `Catégorie: ${filters.categorie}`}
-          </Text>
-          <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
-            <Text style={styles.clearButtonText}>✕ Effacer</Text>
+        {/* Boutons Dépenses / Revenus */}
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={[styles.btn, showForm === "depense" && styles.btnActiveDepense]}
+            onPress={() => setShowForm(showForm === "depense" ? null : "depense")}
+          >
+            <Text style={styles.btnText}>Ajouter une sortie d'argent (Dépense)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.btn, showForm === "revenu" && styles.btnActiveRevenu]}
+            onPress={() => setShowForm(showForm === "revenu" ? null : "revenu")}
+          >
+            <Text style={styles.btnText}>Ajouter une entrée d'argent (Revenu)</Text>
           </TouchableOpacity>
         </View>
-      )}
 
-      {/* ✅ Passe les fonctions de filtrage */}
-      <TransactionList 
-        transactions={filteredTransactions} 
-        onDelete={handleDelete}
-        onFilterByLibelle={handleFilterByLibelle}
-        onFilterByCategorie={handleFilterByCategorie}
-      />
+        {showForm && <AddTransaction type={showForm} onAdded={handleAdded} onClose={() => setShowForm(null)} />}
+
+        {/* ✅ Affichage des filtres actifs */}
+        {(filters.libelle || filters.categorie) && (
+          <View style={styles.filterContainer}>
+            <Text style={styles.filterText}>
+              🔍 Filtre actif: {filters.libelle && `Libellé: ${filters.libelle}`}
+              {filters.categorie && `Catégorie: ${filters.categorie}`}
+            </Text>
+            <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
+              <Text style={styles.clearButtonText}>✕ Effacer</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ✅ Passe les fonctions de filtrage */}
+        <TransactionList 
+          transactions={filteredTransactions} 
+          onDelete={handleDelete}
+          onFilterByLibelle={handleFilterByLibelle}
+          onFilterByCategorie={handleFilterByCategorie}
+        />
+      </ScrollView>
 
       <Toast
         message={toast.message}
@@ -159,7 +167,17 @@ export default function NTMHome() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: "#fff" },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#fff" 
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 15,
+    paddingBottom: 30,
+  },
   headerButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -177,7 +195,6 @@ const styles = StyleSheet.create({
   btnText: { fontSize: 16, fontWeight: "bold", color: "#000" },
   btnActiveDepense: { backgroundColor: "#f88" },
   btnActiveRevenu: { backgroundColor: "#8f8" },
-  // ✅ Styles pour le bandeau de filtre
   filterContainer: {
     flexDirection: "row",
     alignItems: "center",

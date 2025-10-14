@@ -8,77 +8,9 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SvgXml } from "react-native-svg";
 import { registerUser } from "../services/api";
 import { showMessage } from "react-native-flash-message";
 
-const magnifyingGlassSvg = `
-<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="goldGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#ffed4e;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#ffd700;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#c4941f;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="goldGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#c4941f;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#ffd700;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#c4941f;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="handleGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#ffed4e;stop-opacity:1" />
-      <stop offset="30%" style="stop-color:#ffd700;stop-opacity:1" />
-      <stop offset="70%" style="stop-color:#d4af37;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#b8941f;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="dollarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#ffed4e;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#ffd700;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#d4af37;stop-opacity:1" />
-    </linearGradient>
-    <radialGradient id="innerGrad">
-      <stop offset="0%" style="stop-color:#b8941f;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8b6914;stop-opacity:1" />
-    </radialGradient>
-    <filter id="shadow">
-      <feDropShadow dx="3" dy="3" stdDeviation="4" flood-opacity="0.4"/>
-    </filter>
-    <filter id="dollarShadow">
-      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.5"/>
-    </filter>
-  </defs>
-  
-  <rect width="400" height="400" fill="none"/>
-  
-  <g transform="translate(200, 200)" filter="url(#shadow)">
-    <ellipse cx="0" cy="5" rx="85" ry="80" fill="#000000" opacity="0.1"/>
-    <circle cx="0" cy="0" r="85" fill="url(#goldGrad1)"/>
-    <circle cx="0" cy="0" r="72" fill="url(#innerGrad)"/>
-    <circle cx="0" cy="0" r="66" fill="none" stroke="url(#goldGrad2)" stroke-width="4"/>
-    <circle cx="0" cy="0" r="62" fill="#ffffff" opacity="0.15"/>
-    <ellipse cx="-18" cy="-18" rx="25" ry="30" fill="#ffffff" opacity="0.5"/>
-    <ellipse cx="20" cy="20" rx="12" ry="15" fill="#ffffff" opacity="0.2"/>
-    
-    <g filter="url(#dollarShadow)">
-      <text x="3" y="30" font-family="Arial, Helvetica, sans-serif" font-size="90" font-weight="bold" text-anchor="middle" fill="#8b6914" opacity="0.5">$</text>
-      <text x="0" y="28" font-family="Arial, Helvetica, sans-serif" font-size="90" font-weight="bold" text-anchor="middle" fill="url(#dollarGrad)">$</text>
-      <text x="-3" y="25" font-family="Arial, Helvetica, sans-serif" font-size="90" font-weight="bold" text-anchor="middle" fill="#ffed4e" opacity="0.3">$</text>
-    </g>
-    
-    <g transform="rotate(45)">
-      <rect x="64" y="-12" width="65" height="24" rx="12" fill="#000000" opacity="0.15"/>
-      <rect x="60" y="-13" width="65" height="26" rx="13" fill="url(#handleGrad)"/>
-      <rect x="68" y="-11" width="2.5" height="22" fill="#b8941f" opacity="0.6"/>
-      <rect x="78" y="-11" width="2.5" height="22" fill="#b8941f" opacity="0.6"/>
-      <rect x="88" y="-11" width="2.5" height="22" fill="#b8941f" opacity="0.6"/>
-      <rect x="98" y="-11" width="2.5" height="22" fill="#b8941f" opacity="0.6"/>
-      <rect x="108" y="-11" width="2.5" height="22" fill="#b8941f" opacity="0.6"/>
-      <circle cx="118" cy="0" r="13" fill="url(#goldGrad1)"/>
-      <circle cx="118" cy="0" r="9" fill="url(#innerGrad)"/>
-    </g>
-  </g>
-</svg>
-`;
 
 export default function RegisterScreen({ navigation }: any) {
   const [username, setUsername] = useState("");
@@ -120,13 +52,11 @@ export default function RegisterScreen({ navigation }: any) {
     <SafeAreaView style={styles.container}>
       {/* Logo en arrière-plan */}
       <View style={styles.backgroundLogo}>
-        <SvgXml xml={magnifyingGlassSvg} width="280" height="280" opacity={0.08} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Logo principal */}
         <View style={styles.logoContainer}>
-          <SvgXml xml={magnifyingGlassSvg} width="120" height="120" />
         </View>
 
         {/* Header */}

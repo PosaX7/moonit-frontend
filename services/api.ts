@@ -12,8 +12,8 @@ export interface Transaction {
   montant: number;
   categorie: string;
   type: "revenu" | "depense";
+  module: "suivi" | "budget";
   date: string;
-  module?: string;
 }
 
 // ---- Axios Instance ----
@@ -69,6 +69,12 @@ export async function fetchTransactions(): Promise<Transaction[]> {
   return res.data;
 }
 
+// Récupérer les transactions par module (suivi ou budget)
+export async function fetchTransactionsByModule(module: "suivi" | "budget"): Promise<Transaction[]> {
+  const res = await api.get(`/transactions/?module=${module}`);
+  return res.data;
+}
+
 // Créer une transaction
 export async function createTransaction(transaction: Omit<Transaction, "id" | "date">): Promise<Transaction> {
   const res = await api.post("/transactions/", transaction);
@@ -86,15 +92,10 @@ export async function updateTransaction(transaction: Transaction): Promise<Trans
   return res.data;
 }
 
-
-// ---- Alias pour compatibilité ----
+// Alias pour compatibilité
 export async function getTransactions(): Promise<Transaction[]> {
   return fetchTransactions();
 }
-
-// services/api.ts
-
-// Ajoute ces deux fonctions à ton fichier api.ts
 
 // Récupérer les transactions par libellé
 export async function fetchTransactionsByLibelle(libelle: string): Promise<Transaction[]> {
