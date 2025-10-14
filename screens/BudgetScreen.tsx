@@ -5,7 +5,7 @@ import { fetchTransactionsByModule, Transaction, deleteTransaction } from "../se
 import Title_Budget from "../components/TitleBudget";
 import BudgetBubbles from "../components/BudgetBubbles";
 import AddBudgetTransaction from "../components/AddBudgetTransaction";
-import BudgetTransactionList from "../components/BudgetTransactionlist";
+import BudgetTransactionList from "../components/BudgetTransactionList";
 import Toast from "../components/Toast";
 
 export default function BudgetScreen() {
