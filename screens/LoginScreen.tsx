@@ -198,7 +198,7 @@ export default function LoginScreen({ navigation }: any) {
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Mot de passe</Text>
             <TextInput
-              placeholder="••••••••"
+              placeholder="Ton mot de passe ••••••••"
               secureTextEntry
               value={password}
               onChangeText={setPassword}

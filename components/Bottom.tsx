@@ -1,4 +1,3 @@
-// Bottom.tsx
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, StyleSheet, Platform } from "react-native";
@@ -19,12 +18,12 @@ export default function BottomTabs() {
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarActiveTintColor: "#10b981",
-        tabBarInactiveTintColor: "#9ca3af",
+        tabBarInactiveTintColor: "#cbd5e1",
         tabBarShowLabel: true,
         tabBarHideOnKeyboard: true,
         tabBarIcon: ({ color, focused }) => {
           let IconComponent;
-          
+
           switch (route.name) {
             case "Suivi":
               IconComponent = Wallet;
@@ -40,40 +39,37 @@ export default function BottomTabs() {
           }
 
           return (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
-              <IconComponent 
-                color={color} 
-                size={focused ? 26 : 24}
-                strokeWidth={focused ? 2.5 : 2}
+            <View style={styles.iconContainer}>
+              <IconComponent
+                color={color}
+                size={focused ? 24 : 22}
+                strokeWidth={focused ? 2.2 : 1.8}
               />
             </View>
           );
         },
       })}
     >
-      <Tab.Screen 
-        name="Suivi" 
-        component={NTMHome} 
-        options={{ 
+      <Tab.Screen
+        name="Suivi"
+        component={NTMHome}
+        options={{
           tabBarLabel: "Suivi",
-        }} 
+        }}
       />
-      <Tab.Screen 
-        name="Budget" 
-        component={BudgetScreen} 
-        options={{ 
+      <Tab.Screen
+        name="Budget"
+        component={BudgetScreen}
+        options={{
           tabBarLabel: "Budget",
-        }} 
+        }}
       />
-      <Tab.Screen 
-        name="Dashboard" 
-        component={DashboardScreen} 
-        options={{ 
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{
           tabBarLabel: "Dashboard",
-        }} 
+        }}
       />
     </Tab.Navigator>
   );
@@ -82,47 +78,35 @@ export default function BottomTabs() {
 const styles = StyleSheet.create({
   tabBar: {
     position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
-    height: 70,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 65,
     backgroundColor: "#ffffff",
-    borderRadius: 20,
-    paddingBottom: 10,
-    paddingTop: 10,
-    borderTopWidth: 0,
-    elevation: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#f1f5f9",
+    elevation: 5,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 5,
+      height: -2,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === "ios" ? 8 : 4,
   },
   tabBarLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
     marginTop: 4,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    color: "#1e293b",
   },
   iconContainer: {
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 4,
-  },
-  iconContainerActive: {
-    transform: [{ scale: 1.1 }],
+    width: 40,
+    height: 40,
   },
 });

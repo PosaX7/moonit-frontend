@@ -1,4 +1,3 @@
-// components/BudgetBubbles.tsx
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
@@ -9,30 +8,29 @@ interface BudgetBubblesProps {
 }
 
 export default function BudgetBubbles({ totalRevenus, totalDepenses, solde }: BudgetBubblesProps) {
-  const formatMontant = (montant: number) => {
-    return `${Math.abs(montant).toLocaleString("fr-FR")} FCFA`;
-  };
+  const formatMontant = (montant: number) =>
+    montant.toLocaleString("fr-FR", { minimumFractionDigits: 0 });
 
   return (
     <View style={styles.container}>
-      {/* Solde */}
+      {/* Solde Planifié */}
       <View style={[styles.bubble, styles.soldeBubble]}>
         <Text style={styles.label}>Solde Planifié</Text>
-        <Text style={[styles.amount, solde < 0 && styles.negativeAmount]}>
-          {solde >= 0 ? "+" : "-"} {formatMontant(solde)}
+        <Text style={[styles.amount, solde < 0 ? styles.amountNegative : styles.amountPositive]}>
+          {formatMontant(solde)}
         </Text>
       </View>
 
-      {/* Revenus */}
+      {/* Revenus Prévus */}
       <View style={[styles.bubble, styles.revenusBubble]}>
         <Text style={styles.label}>Revenus Prévus</Text>
-        <Text style={styles.amount}>+ {formatMontant(totalRevenus)}</Text>
+        <Text style={styles.amount}>{formatMontant(totalRevenus)}</Text>
       </View>
 
-      {/* Dépenses */}
+      {/* Dépenses Prévues */}
       <View style={[styles.bubble, styles.depensesBubble]}>
         <Text style={styles.label}>Dépenses Prévues</Text>
-        <Text style={styles.amount}>- {formatMontant(totalDepenses)}</Text>
+        <Text style={styles.amount}>{formatMontant(totalDepenses)}</Text>
       </View>
     </View>
   );
@@ -40,49 +38,55 @@ export default function BudgetBubbles({ totalRevenus, totalDepenses, solde }: Bu
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     marginVertical: 20,
-    gap: 10,
+    paddingHorizontal: 10,
+    gap: 12,
   },
   bubble: {
-    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 5,
-  },
-  soldeBubble: {
-    backgroundColor: "#3b82f6",
-  },
-  revenusBubble: {
-    backgroundColor: "#10b981",
-  },
-  depensesBubble: {
-    backgroundColor: "#ef4444",
+    borderWidth: 1,
   },
   label: {
-    fontSize: 11,
+    color: "rgba(255, 255, 255, 0.9)",
     fontWeight: "600",
-    color: "#ffffff",
-    opacity: 0.9,
-    marginBottom: 6,
-    letterSpacing: 0.3,
+    fontSize: 15,
     textTransform: "uppercase",
+    letterSpacing: 1,
   },
   amount: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#ffffff",
-    letterSpacing: 0.3,
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+    letterSpacing: 0.5,
   },
-  negativeAmount: {
-    color: "#fee",
+  amountPositive: {
+    color: "#10b981",
+  },
+  amountNegative: {
+    color: "#ef4444",
+  },
+  soldeBubble: {
+    backgroundColor: "#0c0c10ff",
+    borderColor: "#0c0c10ff",
+    shadowColor: "#0c0c10ff",
+  },
+  revenusBubble: {
+    backgroundColor: "#059669",
+    borderColor: "#10b981",
+    shadowColor: "#059669",
+  },
+  depensesBubble: {
+    backgroundColor: "#dc2626",
+    borderColor: "#ef4444",
+    shadowColor: "#dc2626",
   },
 });

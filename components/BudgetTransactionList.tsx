@@ -20,7 +20,7 @@ export default function BudgetTransactionList({
   onDelete,
 }: BudgetTransactionListProps) {
   const formatMontant = (montant: number) => {
-    return `${montant.toLocaleString("fr-FR")} FCFA`;
+    return `${Math.abs(montant).toLocaleString("fr-FR")} FCFA`;
   };
 
   const formatDate = (dateString: string) => {
@@ -47,7 +47,7 @@ export default function BudgetTransactionList({
             <Text style={styles.categorie}>{item.categorie}</Text>
           </View>
           <TouchableOpacity
-            onPress={() => onDelete(item.id)}
+            onPress={() => onDelete(item.id || 0)}
             style={styles.deleteButton}
           >
             <Trash2 color="#ef4444" size={20} />
@@ -63,7 +63,6 @@ export default function BudgetTransactionList({
               item.type === "depense" ? styles.depenseMontant : styles.revenuMontant,
             ]}
           >
-            {item.type === "depense" ? "- " : "+ "}
             {formatMontant(item.montant)}
           </Text>
         </View>
@@ -86,7 +85,10 @@ export default function BudgetTransactionList({
     <FlatList
       data={transactions}
       renderItem={renderItem}
-      keyExtractor={(item) => item.id.toString()}
+      keyExtractor={(item, index) => {
+        const key = item.id !== undefined && item.id !== null ? item.id.toString() : `budget_${item.local_id}_${index}`;
+        return key;
+      }}
       contentContainerStyle={styles.listContainer}
       showsVerticalScrollIndicator={false}
       scrollEnabled={false}

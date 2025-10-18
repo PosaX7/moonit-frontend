@@ -82,7 +82,7 @@ export default function RegisterScreen({ navigation }: any) {
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Email</Text>
             <TextInput
-              placeholder="ton@email.com"
+              placeholder="Entrer ton email ton@email.com"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -95,7 +95,7 @@ export default function RegisterScreen({ navigation }: any) {
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Mot de passe</Text>
             <TextInput
-              placeholder="••••••••"
+              placeholder="Entrer ton mot de passe ••••••••"
               secureTextEntry
               value={password}
               onChangeText={setPassword}

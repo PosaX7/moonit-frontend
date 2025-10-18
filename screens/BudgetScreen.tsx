@@ -39,9 +39,9 @@ export default function BudgetScreen() {
 
   const solde = totalRevenus - totalDepenses;
 
-  // Ajouter une transaction
-  const handleAdded = (newTx: Transaction) => {
-    setTransactions((prev) => [...prev, newTx]);
+  // Ajouter une ou plusieurs transactions
+  const handleAdded = (newTxs: Transaction[]) => {
+    setTransactions((prev) => [...prev, ...newTxs]);
     setToast({
       visible: true,
       message: "Transaction planifiée ajoutée !",

@@ -69,7 +69,7 @@ const TransactionList: React.FC<Props> = ({
 
       {/* Header du tableau */}
       <View style={styles.tableHeader}>
-        <Text style={[styles.headerText, styles.colId]}>ID</Text>
+        <Text style={[styles.headerText, styles.colId]}>Identifiant</Text>
         <Text style={[styles.headerText, styles.colLibelle]}>Libellé</Text>
         <Text style={[styles.headerText, styles.colCategorie]}>Catégorie</Text>
         <Text style={[styles.headerText, styles.colMontant]}>Montant</Text>
@@ -79,7 +79,11 @@ const TransactionList: React.FC<Props> = ({
       {/* Liste des transactions */}
       <FlatList
         data={sortedTransactions}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) => {
+          // Clé de secours si l'ID est undefined
+          const key = item.id !== undefined && item.id !== null ? item.id.toString() : `local_${item.local_id}_${index}`;
+          return key;
+        }}
         renderItem={({ item }) => (
           <View
             style={[
@@ -90,8 +94,8 @@ const TransactionList: React.FC<Props> = ({
             {/* ID cliquable pour suppression */}
             <TouchableOpacity
               style={styles.colId}
-              onPress={() => handleIdPress(item.id, item.local_id)}
-              disabled={item.local_id === 0}
+              onPress={() => handleIdPress(item.id || 0, item.local_id)}
+              disabled={item.local_id === 0 || !item.id}
             >
               <View style={[
                 styles.idBadge,
@@ -140,7 +144,7 @@ const TransactionList: React.FC<Props> = ({
                 styles.montantText,
                 item.type === "depense" ? styles.montantDepense : styles.montantRevenu,
               ]}>
-                {item.montant.toLocaleString()}
+                {item.montant ? item.montant.toLocaleString() : "—"}
               </Text>
             </View>
 

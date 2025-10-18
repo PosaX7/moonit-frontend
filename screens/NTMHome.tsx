@@ -1,7 +1,7 @@
 // screens/NTMHome.tsx
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity, Text, ScrollView } from "react-native";
-import { fetchTransactions, Transaction, deleteTransaction } from "../services/api";
+import { fetchTransactions, Transaction, deleteTransaction, fetchTransactionsByModule } from "../services/api";
 import AddTransaction from "../components/AddTransaction";
 import Header from "../components/Header";
 import TopBubbles from "../components/TopBubbles";
@@ -30,13 +30,13 @@ export default function NTMHome() {
   });
 
   useEffect(() => {
-    fetchTransactions()
+    fetchTransactionsByModule("suivi")
       .then(setTransactions)
       .catch((err) => console.error("Erreur chargement:", err));
   }, []);
 
-  const handleAdded = (newTx: Transaction) => {
-    setTransactions((prev) => [...prev, newTx]);
+  const handleAdded = (newTxs: Transaction[]) => {
+    setTransactions((prev) => [...prev, ...newTxs]);
   };
 
   const handleDelete = async (id: number) => {
