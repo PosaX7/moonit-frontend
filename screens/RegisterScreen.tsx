@@ -62,7 +62,7 @@ export default function RegisterScreen({ navigation }: any) {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Inscription</Text>
-          <Text style={styles.subtitle}>Créé ton compte en quelques secondes 🚀</Text>
+          <Text style={styles.subtitle}>Crée ton compte en quelques secondes 🚀</Text>
         </View>
 
         {/* Form */}

@@ -1,22 +1,111 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// 🔗 URL de ton backend déployé
+// 🔗 URL du backend Django
 export const API_URL = "https://moonit-backend-10.onrender.com/api";
 
-// ---- Types ----
-export interface Transaction {
-  id: number;
-  local_id: number;
-  libelle: string;
-  montant: number;
-  categorie: string;
-  type: "revenu" | "depense";
-  module: "suivi" | "budget";
-  date: string;
+// ============================
+  // TYPES
+// ============================
+
+export interface Categorie {
+  id: string;
+  nom: string;
+  type_categorie: "depense" | "revenu";
+  icone: string;
+  couleur: string;
+  est_predefinite: boolean;
+  est_active: boolean;
+  ordre: number;
+  nb_transactions: number;
+  created_at: string;
+  updated_at: string;
 }
 
-// ---- Axios Instance ----
+export interface Libelle {
+  id?: string;
+  nom: string;
+  date: string;
+  montant: number;
+  commentaire?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Photo {
+  id?: string;
+  image: string;
+  image_url?: string;
+  legende?: string;
+  created_at?: string;
+}
+
+export interface Transaction {
+  date: string | number | Date;
+  local_id: number;
+  id: string;
+  user: number;
+  user_username?: string;
+  volet: "suivi" | "budget";
+  volet_display?: string;
+  position: "depense" | "revenu";
+  position_display?: string;
+  categorie: string;
+  categorie_detail?: {
+    id: string;
+    nom: string;
+    icone: string;
+    couleur: string;
+    type_categorie: string;
+  };
+  statut: "en_attente" | "validee" | "annulee";
+  statut_display?: string;
+  devise: string;
+  libelles: Libelle[];
+  photos: Photo[];
+  montant_total: number;
+  nb_libelles: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TransactionCreate {
+  position: "depense" | "revenu";
+  categorie_id: string;
+  volet: "suivi" | "budget";
+  libelles: Array<{
+    nom: string;
+    date: string;
+    montant: number;
+    commentaire?: string;
+  }>;
+}
+
+export interface Statistiques {
+  total_revenus: number;
+  total_depenses: number;
+  solde: number;
+  nb_transactions: number;
+  depenses_par_categorie: Array<{
+    categorie__nom: string;
+    categorie__couleur: string;
+    categorie__icone: string;
+    total: number;
+    nombre: number;
+  }>;
+  revenus_par_categorie: Array<{
+    categorie__nom: string;
+    categorie__couleur: string;
+    categorie__icone: string;
+    total: number;
+    nombre: number;
+  }>;
+}
+
+// ============================
+// AXIOS INSTANCE
+// ============================
+
 export const api = axios.create({
   baseURL: API_URL,
 });
@@ -27,7 +116,10 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// ---- Auth ----
+// ============================
+// AUTH
+// ============================
+
 export async function registerUser(username: string, email: string, password: string) {
   const res = await axios.post(`${API_URL}/auth/register/`, { username, email, password });
   return res.data;
@@ -61,62 +153,130 @@ export async function logoutUser() {
   await AsyncStorage.removeItem("refreshToken");
 }
 
-// ---- Transactions ----
+// ============================
+// CATÉGORIES
+// ============================
 
-// Récupérer toutes les transactions
+export async function fetchCategories(type?: "depense" | "revenu"): Promise<Categorie[]> {
+  const url = type ? `/transactions/categories/?type_categorie=${type}` : "/transactions/categories/";
+  const res = await api.get(url);
+  return res.data;
+}
+
+export async function fetchPredefinedCategories(): Promise<Categorie[]> {
+  const res = await api.get("/transactions/categories/predefinies/");
+  return res.data;
+}
+
+export async function fetchCustomCategories(): Promise<Categorie[]> {
+  const res = await api.get("/transactions/categories/personnalisees/");
+  return res.data;
+}
+
+export async function createCategorie(data: {
+  nom: string;
+  type_categorie: "depense" | "revenu";
+  icone?: string;
+  couleur?: string;
+  ordre?: number;
+}): Promise<Categorie> {
+  const res = await api.post("/transactions/categories/", data);
+  return res.data;
+}
+
+export async function deleteCategorie(id: string): Promise<void> {
+  await api.delete(`/transactions/categories/${id}/`);
+}
+
+// ============================
+// TRANSACTIONS
+// ============================
+
 export async function fetchTransactions(): Promise<Transaction[]> {
   const res = await api.get("/transactions/");
   return res.data;
 }
 
-// Récupérer les transactions par module (suivi ou budget)
-export async function fetchTransactionsByModule(module: "suivi" | "budget"): Promise<Transaction[]> {
-  const res = await api.get(`/transactions/?module=${module}`);
+export async function fetchTransactionsByVoLet(volet: "suivi" | "budget"): Promise<Transaction[]> {
+  const res = await api.get(`/transactions/?volet=${volet}`);
   return res.data;
 }
 
-// Créer une transaction
-export async function createTransaction(transaction: Omit<Transaction, "id" | "date">): Promise<Transaction> {
-  const res = await api.post("/transactions/", transaction);
+export async function fetchTransactionsByMonth(
+  annee: number,
+  mois: number,
+  volet?: "suivi" | "budget"
+): Promise<Transaction[]> {
+  let url = `/transactions/par_mois/?annee=${annee}&mois=${mois}`;
+  if (volet) url += `&volet=${volet}`;
+  const res = await api.get(url);
   return res.data;
 }
 
-// Supprimer une transaction
-export async function deleteTransaction(id: number): Promise<void> {
+export async function fetchRecentTransactions(): Promise<Transaction[]> {
+  const res = await api.get("/transactions/recentes/");
+  return res.data;
+}
+
+export async function createTransaction(data: TransactionCreate): Promise<Transaction> {
+  const res = await api.post("/transactions/", data);
+  return res.data;
+}
+
+export async function fetchTransaction(id: string): Promise<Transaction> {
+  const res = await api.get(`/transactions/${id}/`);
+  return res.data;
+}
+
+export async function updateTransaction(id: string, data: Partial<Transaction>): Promise<Transaction> {
+  const res = await api.put(`/transactions/${id}/`, data);
+  return res.data;
+}
+
+export async function deleteTransaction(id: string): Promise<void> {
   await api.delete(`/transactions/${id}/`);
 }
 
-// Modifier une transaction
-export async function updateTransaction(transaction: Transaction): Promise<Transaction> {
-  const res = await api.put(`/transactions/${transaction.id}/`, transaction);
+// ============================
+// PHOTOS
+// ============================
+
+export async function addPhotoToTransaction(
+  transactionId: string,
+  photo: FormData
+): Promise<Photo> {
+  const res = await api.post(
+    `/transactions/transactions/${transactionId}/ajouter_photo/`,
+    photo,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    }
+  );
   return res.data;
 }
 
-// Alias pour compatibilité
-export async function getTransactions(): Promise<Transaction[]> {
-  return fetchTransactions();
+// ============================
+// STATISTIQUES
+// ============================
+
+export async function fetchStatistiques(params?: {
+  volet?: "suivi" | "budget";
+  date_debut?: string;
+  date_fin?: string;
+}): Promise<Statistiques> {
+  const queryParams = new URLSearchParams();
+  if (params?.volet) queryParams.append("volet", params.volet);
+  if (params?.date_debut) queryParams.append("date_debut", params.date_debut);
+  if (params?.date_fin) queryParams.append("date_fin", params.date_fin);
+
+  const url = `/transactions/statistiques/?${queryParams.toString()}`;
+  const res = await api.get(url);
+  return res.data;
 }
 
-// Récupérer les transactions par libellé
-export async function fetchTransactionsByLibelle(libelle: string): Promise<Transaction[]> {
-  const response = await api.get(`/transactions/by-libelle/${encodeURIComponent(libelle)}/`);
-  return response.data;
-}
+// ============================
+// ALIAS (compatibilité)
+// ============================
 
-// Récupérer les transactions par catégorie
-export async function fetchTransactionsByCategorie(categorie: string): Promise<Transaction[]> {
-  const response = await api.get(`/transactions/by-categorie/${encodeURIComponent(categorie)}/`);
-  return response.data;
-}
-
-// Récupérer la liste unique des libellés
-export async function fetchLibelles(): Promise<string[]> {
-  const response = await api.get('/transactions/libelles/');
-  return response.data;
-}
-
-// Récupérer la liste unique des catégories
-export async function fetchCategories(): Promise<string[]> {
-  const response = await api.get('/transactions/categories/');
-  return response.data;
-}
+export const getTransactions = fetchTransactions;
+export const fetchTransactionsByModule = fetchTransactionsByVoLet;

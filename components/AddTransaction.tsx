@@ -1,463 +1,535 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
-import { createTransaction, Transaction } from "../services/api";
-
-type TransactionItem = {
-  libelle: string;
-  montant: string;
-};
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  Modal,
+} from "react-native";
+import { 
+  fetchCategories, 
+  createCategorie,
+  createTransaction as createTransactionAPI 
+} from "../services/api";
+import type { Categorie } from "../services/api";
 
 type Props = {
-  type: "revenu" | "depense";
-  onAdded: (txs: Transaction[]) => void;
+  volet: "suivi" | "budget";
+  onTransactionAdded: () => void;
   onClose: () => void;
 };
 
-export default function AddTransaction({ type, onAdded, onClose }: Props) {
-  const [categorie, setCategorie] = useState("");
-  const [libelle, setLibelle] = useState("");
+export default function AddTransaction({ volet, onTransactionAdded, onClose }: Props) {
+  // 1. POSITION
+  const [position, setPosition] = useState<"depense" | "revenu">("depense");
+  
+  // 2. CATÉGORIE
+  const [categories, setCategories] = useState<Categorie[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [loadingCat, setLoadingCat] = useState(false);
+  
+  // Modal ajout catégorie
+  const [showAddCatModal, setShowAddCatModal] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  
+  // 3. LIBELLÉ
+  const [nom, setNom] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [montant, setMontant] = useState("");
-  const [items, setItems] = useState<TransactionItem[]>([]);
-  const [showNewItem, setShowNewItem] = useState(false);
+  const [commentaire, setCommentaire] = useState("");
+  
+  // 4. SOUMISSION
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleAddItem = () => {
-    if (!libelle || !montant) {
-      alert("Merci de remplir le libellé et le montant");
-      return;
+  // Charger catégories au changement de position
+  useEffect(() => {
+    loadCategories();
+  }, [position]);
+
+  const loadCategories = async () => {
+    try {
+      setLoadingCat(true);
+      const cats = await fetchCategories(position);
+      setCategories(cats);
+      setSelectedCategoryId("");
+    } catch (error) {
+      Alert.alert("Erreur", "Impossible de charger les catégories");
+    } finally {
+      setLoadingCat(false);
     }
-
-    const parsedMontant = parseFloat(montant);
-    if (isNaN(parsedMontant) || parsedMontant <= 0) {
-      alert("Le montant doit être un nombre positif");
-      return;
-    }
-
-    const newItem: TransactionItem = {
-      libelle,
-      montant: parsedMontant.toString(),
-    };
-
-    setItems((prevItems) => [...prevItems, newItem]);
-    setLibelle("");
-    setMontant("");
   };
 
-  const handleRemoveItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
-  };
-
-  const handleSubmit = async () => {
-    if (!categorie || items.length === 0) {
-      alert("Merci de remplir la catégorie et d'ajouter au moins une dépense/revenu");
+  const handleAddCategory = async () => {
+    if (!newCatName.trim()) {
+      Alert.alert("Attention", "Entrez un nom de catégorie");
       return;
     }
 
     try {
-      const transactions = items.map((item) => ({
-        local_id: Date.now() + Math.random(),
-        libelle: item.libelle,
-        montant: parseFloat(item.montant),
-        categorie,
-        type,
-      }));
+      setLoadingCat(true);
+      const newCat = await createCategorie({
+        nom: newCatName.trim(),
+        type_categorie: position,
+        icone: position === "depense" ? "💸" : "💰",
+        couleur: position === "depense" ? "#EF4444" : "#10B981",
+      });
 
-      console.log("Transactions envoyées :", transactions);
-
-      const createdTxs = await Promise.all(
-        transactions.map((tx) => createTransaction(tx))
-      );
-
-      console.log("Transactions créées :", createdTxs);
-      console.log("Type de createdTxs :", Array.isArray(createdTxs) ? "Array" : typeof createdTxs);
-      if (Array.isArray(createdTxs)) {
-        console.log("Première transaction :", createdTxs[0]);
-      }
-
-      onAdded(createdTxs);
-      // Ne pas fermer le modal, réinitialiser le formulaire
-      setItems([]);
-      setCategorie("");
-      setLibelle("");
-      setMontant("");
-      setShowNewItem(false);
-    } catch (err) {
-      console.error("Erreur ajout:", err);
+      await loadCategories();
+      setSelectedCategoryId(newCat.id);
+      setShowAddCatModal(false);
+      setNewCatName("");
+      Alert.alert("Succès", "Catégorie ajoutée !");
+    } catch (error) {
+      Alert.alert("Erreur", "Impossible de créer la catégorie");
+    } finally {
+      setLoadingCat(false);
     }
   };
 
-  const total = items.reduce((sum, item) => sum + (parseFloat(item.montant) || 0), 0);
-  const isDepense = type === "depense";
+  const handleSubmit = async () => {
+    // Validation
+    if (!selectedCategoryId) {
+      Alert.alert("Attention", "Sélectionnez une catégorie");
+      return;
+    }
+    if (!nom.trim()) {
+      Alert.alert("Attention", "Entrez un libellé");
+      return;
+    }
+    if (!montant || parseFloat(montant) <= 0) {
+      Alert.alert("Attention", "Entrez un montant valide");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const transactionData = {
+        position,
+        categorie_id: selectedCategoryId,
+        volet,
+        libelles: [
+          {
+            nom: nom.trim(),
+            date,
+            montant: parseFloat(montant),
+            commentaire: commentaire.trim() || "",
+          },
+        ],
+      };
+
+      console.log("📤 Envoi transaction:", JSON.stringify(transactionData, null, 2));
+
+      const result = await createTransactionAPI(transactionData);
+      
+      console.log("✅ Transaction créée:", JSON.stringify(result, null, 2));
+
+      // ✅ CORRECTION : Appeler uniquement onTransactionAdded
+      // Le composant parent (AddTransactionButton) fermera le modal automatiquement
+      console.log("📱 Appel de onTransactionAdded");
+      onTransactionAdded();
+
+      // Afficher le message de succès
+      Alert.alert("Succès", "Transaction ajoutée !");
+
+    } catch (error: any) {
+      console.error("❌ Erreur création transaction:", error);
+      console.error("❌ Détails erreur:", error.response?.data);
+      
+      const errorMsg = error.response?.data?.detail 
+        || error.response?.data?.message 
+        || "Impossible d'ajouter la transaction";
+      
+      Alert.alert("Erreur", errorMsg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {/* En-tête */}
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>{isDepense ? "Dépenses" : "Revenus"}</Text>
-        <View style={[styles.badge, isDepense ? styles.badgeDepense : styles.badgeRevenu]}>
-          <Text style={styles.badgeText}>{isDepense ? "−" : "+"}</Text>
+        <TouchableOpacity onPress={onClose} style={styles.btnBack}>
+          <Text style={styles.btnBackText}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Nouvelle transaction</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+        {/* 1. POSITION */}
+        <Text style={styles.label}>TYPE *</Text>
+        <View style={styles.row}>
+          <TouchableOpacity
+            style={[styles.btn, position === "depense" && styles.btnDepense]}
+            onPress={() => setPosition("depense")}
+          >
+            <Text style={styles.btnIcon}>💸</Text>
+            <Text style={styles.btnText}>Dépense</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.btn, position === "revenu" && styles.btnRevenu]}
+            onPress={() => setPosition("revenu")}
+          >
+            <Text style={styles.btnIcon}>💰</Text>
+            <Text style={styles.btnText}>Revenu</Text>
+          </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Catégorie avec total sur la même ligne */}
-      <View style={styles.categorieRow}>
-        <TextInput
-          placeholder="Catégorie"
-          placeholderTextColor="#94a3b8"
-          value={categorie}
-          onChangeText={setCategorie}
-          style={[styles.input, styles.inputCategorie, { flex: 1, marginBottom: 0 }]}
-          editable={items.length === 0}
-        />
-        {items.length > 0 && (
-          <View style={styles.totalDisplay}>
-            <Text style={styles.totalAmount}>{total.toFixed(2)}</Text>
-          </View>
-        )}
-      </View>
+        {/* 2. CATÉGORIE */}
+        <Text style={styles.label}>CATÉGORIE *</Text>
+        {loadingCat ? (
+          <ActivityIndicator size="large" color="#14B8A6" />
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.catRow}>
+              {categories.map((cat) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[
+                    styles.catBtn,
+                    selectedCategoryId === cat.id && {
+                      borderColor: cat.couleur,
+                      backgroundColor: cat.couleur + "20",
+                    },
+                  ]}
+                  onPress={() => setSelectedCategoryId(cat.id)}
+                >
+                  <Text style={styles.catIcon}>{cat.icone}</Text>
+                  <Text style={styles.catText}>{cat.nom}</Text>
+                </TouchableOpacity>
+              ))}
 
-      {/* Liste des items */}
-      <ScrollView style={styles.itemsList}>
-        {items.map((item, index) => (
-          <View key={index} style={styles.itemRow}>
-            <View style={styles.itemContent}>
-              <Text style={styles.itemLibelle}>{item.libelle}</Text>
-              <Text style={styles.itemMontant}>{parseFloat(item.montant).toFixed(2)}</Text>
+              <TouchableOpacity
+                style={styles.catBtnAdd}
+                onPress={() => setShowAddCatModal(true)}
+              >
+                <Text style={styles.catIconAdd}>+</Text>
+                <Text style={styles.catTextAdd}>Ajouter</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={styles.btnRemove}
-              onPress={() => handleRemoveItem(index)}
-            >
-              <Text style={styles.btnRemoveText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
+          </ScrollView>
+        )}
+
+        {/* 3. LIBELLÉ */}
+        <Text style={styles.label}>LIBELLÉ *</Text>
+        <TextInput
+          placeholder="Ex: Consultation médecin"
+          placeholderTextColor="#94A3B8"
+          value={nom}
+          onChangeText={setNom}
+          style={styles.input}
+        />
+
+        <Text style={styles.label}>MONTANT (XAF) *</Text>
+        <TextInput
+          placeholder="Ex: 15000"
+          placeholderTextColor="#94A3B8"
+          value={montant}
+          onChangeText={setMontant}
+          keyboardType="decimal-pad"
+          style={styles.input}
+        />
+
+        <Text style={styles.label}>DATE *</Text>
+        <TextInput
+          placeholder="YYYY-MM-DD"
+          value={date}
+          onChangeText={setDate}
+          style={styles.input}
+        />
+
+        <Text style={styles.label}>COMMENTAIRE (optionnel)</Text>
+        <TextInput
+          placeholder="Ajouter une note..."
+          placeholderTextColor="#94A3B8"
+          value={commentaire}
+          onChangeText={setCommentaire}
+          multiline
+          numberOfLines={3}
+          style={[styles.input, styles.inputMulti]}
+        />
+
+        {/* BOUTON ENREGISTRER */}
+        <TouchableOpacity
+          style={[styles.btnSubmit, submitting && styles.btnDisabled]}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
+          {submitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.btnSubmitText}>✓ Enregistrer</Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
 
-      {/* Formulaire d'ajout */}
-      {showNewItem && (
-        <View style={styles.newItemForm}>
-          <TextInput
-            placeholder="Libellé"
-            placeholderTextColor="#94a3b8"
-            value={libelle}
-            onChangeText={setLibelle}
-            style={styles.input}
-          />
+      {/* Modal ajout catégorie */}
+      <Modal
+        visible={showAddCatModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowAddCatModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAddCatModal(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Nouvelle catégorie</Text>
+            <Text style={styles.modalSubtitle}>
+              Type: {position === "depense" ? "Dépense 💸" : "Revenu 💰"}
+            </Text>
 
-          <View>
             <TextInput
-              placeholder="Montant (ex: 22.50 ou 100)"
-              placeholderTextColor="#94a3b8"
-              value={montant}
-              onChangeText={setMontant}
-              keyboardType="decimal-pad"
-              style={styles.input}
+              placeholder="Nom de la catégorie"
+              placeholderTextColor="#94A3B8"
+              value={newCatName}
+              onChangeText={setNewCatName}
+              style={styles.modalInput}
+              autoFocus
             />
-            <Text style={styles.inputHint}>Utilisez le format décimal (ex: 25.99)</Text>
-          </View>
 
-          <View style={styles.formActions}>
-            <TouchableOpacity
-              style={styles.btnSmallSecondary}
-              onPress={() => {
-                setShowNewItem(false);
-                setLibelle("");
-                setMontant("");
-              }}
-            >
-              <Text style={styles.btnSmallText}>Annuler</Text>
-            </TouchableOpacity>
+            <View style={styles.modalBtns}>
+              <TouchableOpacity
+                style={styles.modalBtnCancel}
+                onPress={() => {
+                  setShowAddCatModal(false);
+                  setNewCatName("");
+                }}
+              >
+                <Text style={styles.modalBtnCancelText}>Annuler</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.btnSmallPrimary, isDepense ? styles.btnSmallDepense : styles.btnSmallRevenu]}
-              onPress={handleAddItem}
-            >
-              <Text style={styles.btnSmallPrimaryText}>Ajouter</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {/* Bouton "Ajouter une dépense/revenu" */}
-      {!showNewItem && (
-        <TouchableOpacity
-          style={[styles.btnAddItem, isDepense ? styles.btnAddItemDepense : styles.btnAddItemRevenu]}
-          onPress={() => setShowNewItem(true)}
-        >
-          <Text style={styles.btnAddItemText}>
-            + Ajouter {isDepense ? "une dépense" : "un revenu"} liée{isDepense ? "" : ""} à {categorie || "cette catégorie"}
-          </Text>
+              <TouchableOpacity
+                style={styles.modalBtnOk}
+                onPress={handleAddCategory}
+                disabled={!newCatName.trim()}
+              >
+                <Text style={styles.modalBtnOkText}>Ajouter</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
         </TouchableOpacity>
-      )}
-
-      {/* Actions principales */}
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.btnSecondary} onPress={onClose}>
-          <Text style={styles.btnSecondaryText}>Annuler</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.btnPrimary,
-            isDepense ? styles.btnPrimaryDepense : styles.btnPrimaryRevenu,
-            items.length === 0 && styles.btnDisabled,
-          ]}
-          onPress={handleSubmit}
-          disabled={items.length === 0}
-        >
-          <Text style={styles.btnPrimaryText}>Valider</Text>
-        </TouchableOpacity>
-      </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#f8fafc",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
+    flex: 1,
+    backgroundColor: "#F8FAFC",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 16,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#1e293b",
-    letterSpacing: -0.5,
-  },
-  badge: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+  btnBack: {
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
   },
-  badgeDepense: {
-    backgroundColor: "#fee2e2",
+  btnBackText: {
+    fontSize: 28,
+    color: "#64748B",
   },
-  badgeRevenu: {
-    backgroundColor: "#d1fae5",
-  },
-  badgeText: {
+  headerTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#1e293b",
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  form: {
+    flex: 1,
+    padding: 16,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#64748B",
+    letterSpacing: 1,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  row: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  btn: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  btnDepense: {
+    borderColor: "#EF4444",
+    backgroundColor: "#FEE2E2",
+  },
+  btnRevenu: {
+    borderColor: "#10B981",
+    backgroundColor: "#D1FAE5",
+  },
+  btnIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  btnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+  catRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  catBtn: {
+    minWidth: 100,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  catIcon: {
+    fontSize: 28,
+    marginBottom: 4,
+  },
+  catText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+  catBtnAdd: {
+    minWidth: 100,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#CBD5E1",
+    borderStyle: "dashed",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+  },
+  catIconAdd: {
+    fontSize: 28,
+    color: "#94A3B8",
+    marginBottom: 4,
+  },
+  catTextAdd: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748B",
   },
   input: {
     backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 12,
+    borderColor: "#E2E8F0",
+    borderRadius: 10,
     padding: 14,
     fontSize: 15,
-    color: "#1e293b",
-    marginBottom: 12,
-    fontWeight: "500",
+    color: "#1E293B",
   },
-  inputCategorie: {
+  inputMulti: {
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  btnSubmit: {
+    padding: 18,
+    backgroundColor: "#14B8A6",
+    borderRadius: 14,
+    alignItems: "center",
+    marginTop: 24,
+    marginBottom: 24,
+  },
+  btnSubmitText: {
     fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 16,
-  },
-  categorieRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    gap: 12,
-  },
-  totalDisplay: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    minWidth: 100,
-    alignItems: "flex-end",
-  },
-  totalBox: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  totalBoxDepense: {
-    backgroundColor: "#fee2e2",
-    borderLeftWidth: 4,
-    borderLeftColor: "#dc2626",
-  },
-  totalBoxRevenu: {
-    backgroundColor: "#d1fae5",
-    borderLeftWidth: 4,
-    borderLeftColor: "#059669",
-  },
-  totalLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#64748b",
-  },
-  totalAmount: {
-    fontSize: 18,
     fontWeight: "700",
-    color: "#1e293b",
-  },
-  itemsList: {
-    maxHeight: 200,
-    marginBottom: 16,
-  },
-  itemRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    marginBottom: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: "#fbbf24",
-  },
-  itemContent: {
-    flex: 1,
-  },
-  itemLibelle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1e293b",
-    marginBottom: 4,
-  },
-  itemMontant: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#64748b",
-  },
-  btnRemove: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: "#fee2e2",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnRemoveText: {
-    fontSize: 16,
-    color: "#dc2626",
-    fontWeight: "bold",
-  },
-  newItemForm: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderStyle: "dashed",
-  },
-  formActions: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 8,
-  },
-  btnSmallSecondary: {
-    flex: 1,
-    backgroundColor: "#f1f5f9",
-    padding: 10,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  btnSmallText: {
-    color: "#64748b",
-    fontWeight: "600",
-    fontSize: 13,
-  },
-  btnSmallPrimary: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  btnSmallDepense: {
-    backgroundColor: "#dc2626",
-  },
-  btnSmallRevenu: {
-    backgroundColor: "#059669",
-  },
-  btnSmallPrimaryText: {
     color: "#fff",
-    fontWeight: "600",
-    fontSize: 13,
-  },
-  btnAddItem: {
-    padding: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginBottom: 12,
-    borderWidth: 2,
-    borderStyle: "dashed",
-  },
-  btnAddItemDepense: {
-    borderColor: "#dc2626",
-    backgroundColor: "#fef2f2",
-  },
-  btnAddItemRevenu: {
-    borderColor: "#059669",
-    backgroundColor: "#f0fdf4",
-  },
-  btnAddItemText: {
-    fontWeight: "600",
-    fontSize: 14,
-    color: "#1e293b",
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  btnSecondary: {
-    flex: 1,
-    backgroundColor: "#f1f5f9",
-    padding: 14,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  btnSecondaryText: {
-    color: "#64748b",
-    fontWeight: "600",
-    fontSize: 15,
-  },
-  btnPrimary: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  btnPrimaryDepense: {
-    backgroundColor: "#dc2626",
-  },
-  btnPrimaryRevenu: {
-    backgroundColor: "#059669",
-  },
-  btnPrimaryText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 15,
   },
   btnDisabled: {
     opacity: 0.5,
   },
-  inputHint: {
-    fontSize: 12,
-    color: "#64748b",
-    marginTop: 2,
-    marginLeft: 2,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalBox: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+    width: "85%",
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#64748B",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  modalInput: {
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 10,
+    padding: 14,
+    fontSize: 15,
+    color: "#1E293B",
+    marginBottom: 20,
+  },
+  modalBtns: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  modalBtnCancel: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+  },
+  modalBtnCancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#64748B",
+  },
+  modalBtnOk: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: "#14B8A6",
+    alignItems: "center",
+  },
+  modalBtnOkText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#fff",
   },
 });

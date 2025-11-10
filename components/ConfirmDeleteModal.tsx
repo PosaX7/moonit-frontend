@@ -1,16 +1,9 @@
-// components/ConfirmDeleteModal.tsx
 import React from "react";
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
 interface Props {
   visible: boolean;
-  transactionId: number;
+  transactionId: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -23,31 +16,36 @@ const ConfirmDeleteModal: React.FC<Props> = ({
 }) => {
   return (
     <Modal
-      transparent={true}
       visible={visible}
+      transparent
       animationType="fade"
       onRequestClose={onCancel}
     >
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
-          <Text style={styles.title}>Confirmer la suppression</Text>
+          <View style={styles.iconContainer}>
+            <Text style={styles.icon}>⚠️</Text>
+          </View>
+
+          <Text style={styles.title}>Supprimer cette transaction ?</Text>
+          
           <Text style={styles.message}>
-            Voulez-vous vraiment supprimer la transaction #{transactionId} ?
+            Cette action est irréversible. Tous les libellés et photos associés seront supprimés.
           </Text>
 
-          <View style={styles.buttonContainer}>
+          <View style={styles.actions}>
             <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
+              style={[styles.button, styles.buttonCancel]}
               onPress={onCancel}
             >
-              <Text style={styles.buttonText}>Annuler</Text>
+              <Text style={styles.buttonCancelText}>Annuler</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.button, styles.deleteButton]}
+              style={[styles.button, styles.buttonDelete]}
               onPress={onConfirm}
             >
-              <Text style={styles.buttonText}>Supprimer</Text>
+              <Text style={styles.buttonDeleteText}>Supprimer</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -62,53 +60,68 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
   modalContainer: {
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 20,
     padding: 24,
-    width: "80%",
+    width: "100%",
     maxWidth: 400,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  iconContainer: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  icon: {
+    fontSize: 48,
   },
   title: {
     fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 12,
+    fontWeight: "700",
+    color: "#1E293B",
     textAlign: "center",
-    color: "#333",
+    marginBottom: 12,
+    letterSpacing: -0.5,
   },
   message: {
-    fontSize: 16,
-    marginBottom: 24,
+    fontSize: 15,
+    color: "#64748B",
     textAlign: "center",
-    color: "#666",
+    marginBottom: 24,
+    lineHeight: 22,
   },
-  buttonContainer: {
+  actions: {
     flexDirection: "row",
-    justifyContent: "space-between",
     gap: 12,
   },
   button: {
     flex: 1,
-    padding: 14,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: "center",
+    justifyContent: "center",
   },
-  cancelButton: {
-    backgroundColor: "#6c757d",
+  buttonCancel: {
+    backgroundColor: "#F1F5F9",
   },
-  deleteButton: {
-    backgroundColor: "#dc3545",
+  buttonDelete: {
+    backgroundColor: "#EF4444",
   },
-  buttonText: {
-    color: "#fff",
+  buttonCancelText: {
     fontSize: 16,
     fontWeight: "600",
+    color: "#64748B",
+  },
+  buttonDeleteText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
   },
 });
 

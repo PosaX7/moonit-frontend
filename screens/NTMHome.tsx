@@ -1,21 +1,21 @@
 // screens/NTMHome.tsx
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView } from "react-native";
-import { fetchTransactions, Transaction, deleteTransaction, fetchTransactionsByModule } from "../services/api";
-import AddTransaction from "../components/AddTransaction";
+import { View, StyleSheet, TouchableOpacity, Text, ScrollView, RefreshControl } from "react-native";
+import { fetchTransactionsByVoLet, Transaction, deleteTransaction } from "../services/api";
 import Header from "../components/Header";
 import TopBubbles from "../components/TopBubbles";
 import useSolde from "../hooks/useSolde";
-import TransactionList from "../components/TransactionList";
+import TransactionListImport from "../components/TransactionList";
+const TransactionList = TransactionListImport as unknown as React.ComponentType<any>;
+import AddTransactionButton from "../components/AddTransactionButton";
 import Toast from "../components/Toast";
 
 export default function NTMHome() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [showForm, setShowForm] = useState<"revenu" | "depense" | null>(null);
+  const [loading, setLoading] = useState(false);
   
   // ✅ State pour les filtres
   const [filters, setFilters] = useState<{
-    libelle?: string;
     categorie?: string;
   }>({});
   
@@ -29,21 +29,33 @@ export default function NTMHome() {
     type: "success",
   });
 
-  useEffect(() => {
-    fetchTransactionsByModule("suivi")
-      .then(setTransactions)
-      .catch((err) => console.error("Erreur chargement:", err));
-  }, []);
-
-  const handleAdded = (newTxs: Transaction[]) => {
-    setTransactions((prev) => [...prev, ...newTxs]);
+  // Charger les transactions
+  const loadTransactions = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchTransactionsByVoLet("suivi");
+      setTransactions(data);
+    } catch (err) {
+      console.error("Erreur chargement:", err);
+      setToast({
+        visible: true,
+        message: "Erreur de chargement",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = async (id: number) => {
+  useEffect(() => {
+    loadTransactions();
+  }, []);
+
+  const handleDelete = async (id: string) => {
     try {
       console.log("Suppression de la transaction ID:", id);
       await deleteTransaction(id);
-      setTransactions((prev) => prev.filter((tx) => tx.id !== id));
+      await loadTransactions(); // Recharger la liste
       
       setToast({
         visible: true,
@@ -61,24 +73,24 @@ export default function NTMHome() {
     }
   };
 
-  // ✅ Fonction de filtrage par libellé
-  const handleFilterByLibelle = (libelle: string) => {
-    setFilters({ libelle });
-    setToast({
-      visible: true,
-      message: `Filtré par libellé: ${libelle}`,
-      type: "success",
-    });
-  };
-
   // ✅ Fonction de filtrage par catégorie
   const handleFilterByCategorie = (categorie: string) => {
-    setFilters({ categorie });
-    setToast({
-      visible: true,
-      message: `Filtré par catégorie: ${categorie}`,
-      type: "success",
-    });
+    if (filters.categorie === categorie) {
+      // Si on clique sur la même catégorie, on retire le filtre
+      setFilters({});
+      setToast({
+        visible: true,
+        message: "Filtre retiré",
+        type: "success",
+      });
+    } else {
+      setFilters({ categorie });
+      setToast({
+        visible: true,
+        message: `Filtré par: ${categorie}`,
+        type: "success",
+      });
+    }
   };
 
   // ✅ Fonction pour réinitialiser les filtres
@@ -93,8 +105,7 @@ export default function NTMHome() {
 
   // ✅ Filtrer les transactions
   const filteredTransactions = transactions.filter((tx) => {
-    if (filters.libelle && tx.libelle !== filters.libelle) return false;
-    if (filters.categorie && tx.categorie !== filters.categorie) return false;
+    if (filters.categorie && tx.categorie_detail?.nom !== filters.categorie) return false;
     return true;
   });
 
@@ -102,6 +113,7 @@ export default function NTMHome() {
     setToast((prev) => ({ ...prev, visible: false }));
   };
 
+  // Calcul des totaux sur les transactions filtrées
   const { totalRevenus, totalDepenses, solde } = useSolde(filteredTransactions);
 
   return (
@@ -112,34 +124,22 @@ export default function NTMHome() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}
-        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={loadTransactions}
+            tintColor="#14B8A6"
+            colors={["#14B8A6"]}
+          />
+        }
       >
         <TopBubbles totalRevenus={totalRevenus} totalDepenses={totalDepenses} solde={solde} />
 
-        {/* Boutons Dépenses / Revenus */}
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={[styles.btn, showForm === "depense" && styles.btnActiveDepense]}
-            onPress={() => setShowForm(showForm === "depense" ? null : "depense")}
-          >
-            <Text style={styles.btnText}>Ajouter une sortie d'argent (Dépense)</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.btn, showForm === "revenu" && styles.btnActiveRevenu]}
-            onPress={() => setShowForm(showForm === "revenu" ? null : "revenu")}
-          >
-            <Text style={styles.btnText}>Ajouter une entrée d'argent (Revenu)</Text>
-          </TouchableOpacity>
-        </View>
-
-        {showForm && <AddTransaction type={showForm} onAdded={handleAdded} onClose={() => setShowForm(null)} />}
-
         {/* ✅ Affichage des filtres actifs */}
-        {(filters.libelle || filters.categorie) && (
+        {filters.categorie && (
           <View style={styles.filterContainer}>
             <Text style={styles.filterText}>
-              🔍 Filtre actif: {filters.libelle && `Libellé: ${filters.libelle}`}
-              {filters.categorie && `Catégorie: ${filters.categorie}`}
+              🔍 Catégorie: {filters.categorie}
             </Text>
             <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
               <Text style={styles.clearButtonText}>✕ Effacer</Text>
@@ -147,14 +147,20 @@ export default function NTMHome() {
           </View>
         )}
 
-        {/* ✅ Passe les fonctions de filtrage */}
+        {/* ✅ Liste des transactions avec filtrage */}
         <TransactionList 
           transactions={filteredTransactions} 
           onDelete={handleDelete}
-          onFilterByLibelle={handleFilterByLibelle}
           onFilterByCategorie={handleFilterByCategorie}
+          onRefresh={loadTransactions}
         />
       </ScrollView>
+
+      {/* ✅ Bouton flottant pour ajouter une transaction */}
+      <AddTransactionButton 
+        volet="suivi" 
+        onTransactionAdded={loadTransactions}
+      />
 
       <Toast
         message={toast.message}
@@ -169,54 +175,42 @@ export default function NTMHome() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: "#fff" 
+    backgroundColor: "#F8FAFC" 
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 15,
-    paddingBottom: 30,
+    padding: 16,
+    paddingBottom: 100, // Espace pour le bouton flottant
   },
-  headerButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 15,
-    marginTop: 15,
-  },
-  btn: {
-    flex: 1,
-    padding: 12,
-    marginHorizontal: 5,
-    backgroundColor: "#ccc",
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  btnText: { fontSize: 16, fontWeight: "bold", color: "#000" },
-  btnActiveDepense: { backgroundColor: "#f88" },
-  btnActiveRevenu: { backgroundColor: "#8f8" },
   filterContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#eff6ff",
+    backgroundColor: "#EFF6FF",
     padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: 12,
+    marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: "#2563eb",
+    borderLeftColor: "#2563EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   filterText: {
     flex: 1,
     fontSize: 14,
     fontWeight: "600",
-    color: "#1e40af",
+    color: "#1E40AF",
   },
   clearButton: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#2563EB",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   clearButtonText: {
     color: "#fff",

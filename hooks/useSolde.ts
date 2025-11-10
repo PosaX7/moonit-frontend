@@ -1,20 +1,23 @@
+// hooks/useSolde.ts
 import { useMemo } from "react";
 import { Transaction } from "../services/api";
 
 export default function useSolde(transactions: Transaction[]) {
-  const totalRevenus = useMemo(() => {
-    return transactions
-      .filter((tx) => tx.type === "revenu")
-      .reduce((acc, tx) => acc + tx.montant, 0);
-  }, [transactions]);
+  const { totalRevenus, totalDepenses, solde } = useMemo(() => {
+    const revenus = transactions
+      .filter((tx) => tx.position === "revenu" && tx.statut === "validee")
+      .reduce((sum, tx) => sum + tx.montant_total, 0);
 
-  const totalDepenses = useMemo(() => {
-    return transactions
-      .filter((tx) => tx.type === "depense")
-      .reduce((acc, tx) => acc + tx.montant, 0);
-  }, [transactions]);
+    const depenses = transactions
+      .filter((tx) => tx.position === "depense" && tx.statut === "validee")
+      .reduce((sum, tx) => sum + tx.montant_total, 0);
 
-  const solde = totalRevenus - totalDepenses;
+    return {
+      totalRevenus: revenus,
+      totalDepenses: depenses,
+      solde: revenus - depenses,
+    };
+  }, [transactions]);
 
   return { totalRevenus, totalDepenses, solde };
 }
