@@ -31,7 +31,7 @@ export default function NTMHome() {
     try {
       const data = await fetchTransactionsByVoLet("suivi");
       setTransactions(data);
-      setFilteredTransactions(data); // Initialiser avec toutes les transactions
+      setFilteredTransactions(data);
     } catch (err) {
       console.error("Erreur chargement:", err);
       setToast({
@@ -50,10 +50,8 @@ export default function NTMHome() {
 
   const handleDelete = async (id: string) => {
     try {
-      console.log("Suppression de la transaction ID:", id);
       await deleteTransaction(id);
-      await loadTransactions(); // Recharger la liste
-
+      await loadTransactions();
       setToast({
         visible: true,
         message: "Transaction supprimée avec succès",
@@ -61,7 +59,6 @@ export default function NTMHome() {
       });
     } catch (error) {
       console.error("Erreur lors de la suppression:", error);
-
       setToast({
         visible: true,
         message: "Échec de suppression",
@@ -70,7 +67,6 @@ export default function NTMHome() {
     }
   };
 
-  // Callback pour mettre à jour les transactions filtrées
   const handleFilterChange = (filtered: Transaction[]) => {
     setFilteredTransactions(filtered);
   };
@@ -79,7 +75,7 @@ export default function NTMHome() {
     setToast((prev) => ({ ...prev, visible: false }));
   };
 
-  // Calcul des totaux
+  // Calcul des totaux sur les transactions filtrées
   const { totalRevenus, totalDepenses, solde } = useSolde(filteredTransactions);
 
   return (
@@ -100,16 +96,7 @@ export default function NTMHome() {
         }
       >
         {/* 🔵 Bulle des soldes */}
-        <TopBubbles
-          totalRevenus={totalRevenus}
-          totalDepenses={totalDepenses}
-          solde={solde}
-        />
-
-        {/* 🟠 FILTRE MINI – juste affiché, aucune logique */}
-        <View style={{ marginTop: 12, marginBottom: 20 }}>
-          <SuiviFiltreMini />
-        </View>
+        <TopBubbles totalRevenus={totalRevenus} totalDepenses={totalDepenses} solde={solde} />
 
         {/* 📄 Liste des transactions */}
         <TransactionList
@@ -133,15 +120,7 @@ export default function NTMHome() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  scrollView: { flex: 1 },
+  scrollContent: { padding: 16, paddingBottom: 100 },
 });
