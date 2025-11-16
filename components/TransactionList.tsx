@@ -1,5 +1,12 @@
-import React, { useState } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+} from "react-native";
 import { Transaction } from "../services/api";
 
 const formatDateFR = (isoDate: string) => {
@@ -13,80 +20,112 @@ const formatDateFR = (isoDate: string) => {
 
 type Props = {
   transactions: Transaction[];
+  onDelete?: (transactionId: string, montantTotal: number) => void;
+  onFilterChange?: (filteredTransactions: Transaction[]) => void;
 };
 
-const TransactionList: React.FC<Props> = ({ transactions }) => {
+const TransactionList: React.FC<Props> = ({
+  transactions,
+  onDelete,
+  onFilterChange,
+}) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showActionBubble, setShowActionBubble] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
-  // Tri par date décroissante
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
   const sortedTransactions = [...transactions].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 
-  // Filtrage par catégorie
   const filteredTransactions = selectedCategory
     ? sortedTransactions.filter((t) => {
-        const categorieData = t.categorie || t.categorie_detail;
-        const categorieId = typeof categorieData === "string" ? categorieData : categorieData?.id;
-        return categorieId === selectedCategory;
+        const catData = t.categorie || t.categorie_detail;
+        const name = typeof catData === "string" ? catData : catData?.nom;
+        return name === selectedCategory;
       })
     : sortedTransactions;
 
-  const handleCategoryPress = (categoryId: string) => {
-    // Si on clique sur la catégorie déjà sélectionnée, on désélectionne
-    setSelectedCategory(selectedCategory === categoryId ? null : categoryId);
+  useEffect(() => {
+    if (onFilterChange) {
+      onFilterChange(filteredTransactions);
+    }
+  }, [selectedCategory, transactions]);
+
+  const handleIconPress = (item: Transaction) => {
+    setSelectedTransaction(item);
+    setShowActionBubble(true);
+
+    fadeAnim.setValue(0);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeBubble = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowActionBubble(false);
+      setSelectedTransaction(null);
+    });
+  };
+
+  const handleCategoryPress = (categoryName: string) => {
+    setSelectedCategory(selectedCategory === categoryName ? null : categoryName);
   };
 
   const renderItem = ({ item }: { item: Transaction }) => {
-    // Catégorie (depuis categorie ou categorie_detail selon la réponse API)
-    const categorieData = item.categorie || item.categorie_detail;
-    let categorie = "Transaction";
-    let categorieId = "";
+    const catData = item.categorie || item.categorie_detail;
+    let catName = "Transaction";
     let icone = item.position === "depense" ? "💸" : "💰";
     let couleurCategorie = item.position === "depense" ? "#EF4444" : "#10B981";
 
-    if (categorieData) {
-      if (typeof categorieData === "string") {
-        categorie = categorieData || categorie;
-        categorieId = categorieData;
+    if (catData) {
+      if (typeof catData === "string") {
+        catName = catData;
       } else {
-        categorie = categorieData.nom || categorie;
-        categorieId = categorieData.id || "";
-        icone = categorieData.icone || icone;
-        couleurCategorie = categorieData.couleur || couleurCategorie;
+        catName = catData.nom || catName;
+        icone = catData.icone || icone;
+        couleurCategorie = catData.couleur || couleurCategorie;
       }
     }
 
-    // Date
     const dateTransaction = item.created_at;
-    
-    // Montant (sans devise)
-    const montantValue = item.montant_total?.toLocaleString() || 0;
-    const montant = montantValue;
-    const couleurMontant = item.position === "depense" ? "#EF4444" : "#10B981";
+    const montantTotal = item.libelles
+      ? item.libelles.reduce((acc, l) => acc + (l.montant || 0), 0)
+      : item.montant_total || 0;
 
-    const isSelected = selectedCategory === categorieId;
+    const couleurMontant = item.position === "depense" ? "#EF4444" : "#10B981";
+    const isSelected = selectedCategory === catName;
 
     return (
       <View style={[styles.card, isSelected && styles.cardSelected]}>
-        {/* Icône de catégorie - cliquable */}
+        {/* Icône - cliquable pour supprimer */}
         <TouchableOpacity
           style={[styles.iconContainer, { backgroundColor: couleurCategorie + "20" }]}
-          onPress={() => handleCategoryPress(categorieId)}
+          onPress={() => handleIconPress(item)}
           activeOpacity={0.7}
         >
           <Text style={styles.icon}>{icone}</Text>
         </TouchableOpacity>
-        
-        {/* Détails */}
+
+        {/* Catégorie et Date */}
         <View style={styles.details}>
-          <Text style={styles.categorie}>{categorie}</Text>
+          <TouchableOpacity onPress={() => handleCategoryPress(catName)} activeOpacity={0.7}>
+            <Text style={styles.categorie}>{catName}</Text>
+          </TouchableOpacity>
           <Text style={styles.date}>{formatDateFR(dateTransaction)}</Text>
         </View>
-        
+
         {/* Montant */}
         <Text style={[styles.montant, { color: couleurMontant }]}>
-          {montant}
+          {montantTotal.toLocaleString()}
         </Text>
       </View>
     );
@@ -94,13 +133,14 @@ const TransactionList: React.FC<Props> = ({ transactions }) => {
 
   return (
     <View style={styles.container}>
-      {/* Indicateur de filtre actif */}
       {selectedCategory && (
         <TouchableOpacity
           style={styles.filterBadge}
           onPress={() => setSelectedCategory(null)}
         >
-          <Text style={styles.filterText}>Filtre actif - Appuyez pour tout afficher</Text>
+          <Text style={styles.filterText}>
+            🔍 Filtre: {selectedCategory} ({filteredTransactions.length})
+          </Text>
           <Text style={styles.filterIcon}>✕</Text>
         </TouchableOpacity>
       )}
@@ -113,30 +153,57 @@ const TransactionList: React.FC<Props> = ({ transactions }) => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>
-              {selectedCategory ? "🔍" : "📭"}
-            </Text>
-            <Text style={styles.emptyText}>
-              {selectedCategory
-                ? "Aucune transaction pour cette catégorie"
-                : "Aucune transaction"}
-            </Text>
+            <Text style={styles.emptyIcon}>📭</Text>
+            <Text style={styles.emptyText}>Aucune transaction</Text>
             <Text style={styles.emptySubtext}>
-              {selectedCategory
-                ? "Appuyez sur le filtre pour afficher toutes les transactions"
-                : "Appuyez sur le bouton + pour commencer"}
+              Appuyez sur le bouton + pour commencer
             </Text>
           </View>
         }
       />
+
+      {/* Bulle d'action */}
+      {showActionBubble && selectedTransaction && (
+        <Animated.View
+          style={[
+            styles.actionBubbleContainer,
+            { opacity: fadeAnim },
+          ]}
+        >
+          <TouchableOpacity 
+            style={styles.backdrop}
+            activeOpacity={1}
+            onPress={closeBubble}
+          >
+            <View style={styles.actionBubble}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  const montantTotal = selectedTransaction.libelles
+                    ? selectedTransaction.libelles.reduce((acc, l) => acc + (l.montant || 0), 0)
+                    : selectedTransaction.montant_total || 0;
+
+                  onDelete?.(selectedTransaction.id, montantTotal);
+                  closeBubble();
+                }}
+              >
+                <Text style={styles.actionDelete}>Supprimer</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.actionButton} onPress={closeBubble}>
+                <Text style={styles.actionCancel}>Annuler</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+
   filterBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -154,16 +221,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flex: 1,
   },
-  filterIcon: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "700",
-    marginLeft: 8,
-  },
-  listContainer: {
-    padding: 16,
-    paddingBottom: 100,
-  },
+  filterIcon: { color: "#fff", fontSize: 18, marginLeft: 8 },
+
+  listContainer: { padding: 16, paddingBottom: 100 },
+
   card: {
     flexDirection: "row",
     alignItems: "center",
@@ -177,11 +238,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+
   cardSelected: {
     borderWidth: 2,
     borderColor: "#14B8A6",
     backgroundColor: "#F0FDFA",
   },
+
   iconContainer: {
     width: 48,
     height: 48,
@@ -190,26 +253,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 14,
   },
-  icon: {
-    fontSize: 24,
-  },
+
+  icon: { fontSize: 24 },
+
   details: {
     flex: 1,
   },
+
   categorie: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "700",
-    color: "#1E293B",
+    color: "#2563EB",
     marginBottom: 4,
   },
+
   date: {
     fontSize: 13,
-    color: "#94A3B8",
+    color: "#000000",
   },
+
   montant: {
     fontSize: 18,
     fontWeight: "700",
   },
+
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -230,6 +297,51 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
     textAlign: "center",
     paddingHorizontal: 32,
+  },
+
+  actionBubbleContainer: {
+    position: "absolute",
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0,
+  },
+
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  actionBubble: {
+    backgroundColor: "#fff",
+    paddingVertical: 22,
+    paddingHorizontal: 30,
+    borderRadius: 16,
+    width: "72%",
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+  },
+
+  actionButton: { paddingVertical: 12 },
+
+  actionDelete: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#EF4444",
+    textAlign: "center",
+  },
+
+  actionCancel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#334155",
+    textAlign: "center",
+    marginTop: 10,
   },
 });
 
