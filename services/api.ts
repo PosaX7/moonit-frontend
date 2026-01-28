@@ -280,3 +280,15 @@ export async function fetchStatistiques(params?: {
 
 export const getTransactions = fetchTransactions;
 export const fetchTransactionsByModule = fetchTransactionsByVoLet;
+
+
+
+// ============================
+// BUDJET TRANSACTIONS
+// ============================
+
+// --- Fetch transactions budget ---
+export async function fetchBudgetTransactions(): Promise<Transaction[]> {
+  const res = await api.get("/transactions/?volet=budget");
+  return res.data;
+}

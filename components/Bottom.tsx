@@ -54,7 +54,7 @@ export default function BottomTabs() {
         name="Suivi"
         component={NTMHome}
         options={{
-          tabBarLabel: "Suivi",
+          tabBarLabel: "Registre",
         }}
       />
       <Tab.Screen

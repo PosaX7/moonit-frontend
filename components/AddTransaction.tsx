@@ -51,7 +51,7 @@ export default function AddTransaction({ volet, onTransactionAdded, onClose }: P
 
   // 5. SOUMISSION
   const [submitting, setSubmitting] = useState(false);
-
+  
   // Charger catégories au changement de position
   useEffect(() => {
     loadCategories();
@@ -104,7 +104,7 @@ export default function AddTransaction({ volet, onTransactionAdded, onClose }: P
     }
     const montantNum = parseFloat(libelleMontant);
     if (isNaN(montantNum) || montantNum <= 0) {
-      Alert.alert("Attention", "Entrez un montant valide");
+      Alert.alert("Attention", "Le montant doit être supérieur à 0");
       return;
     }
 
@@ -170,7 +170,7 @@ export default function AddTransaction({ volet, onTransactionAdded, onClose }: P
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container}> 
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onClose} style={styles.btnBack}>

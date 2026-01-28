@@ -15,6 +15,7 @@ export type RootStackParamList = {
   Login: undefined;
   NTMWelcome: undefined;
   NTMHome: undefined;
+  AddBudget: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -49,6 +50,8 @@ export default function App() {
             component={BottomTabs}
             options={{ headerShown: false }}
           />
+
+          {/* AddBudget screen inside the navigator */}
         </Stack.Navigator>
       </NavigationContainer>
 

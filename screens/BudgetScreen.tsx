@@ -1,132 +1,194 @@
 // screens/BudgetScreen.tsx
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView } from "react-native";
-import { fetchTransactionsByModule, Transaction, deleteTransaction } from "../services/api";
-import Title_Budget from "../components/TitleBudget";
-import BudgetBubbles from "../components/BudgetBubbles";
-import AddBudgetTransaction from "../components/AddBudgetTransaction";
-import BudgetTransactionList from "../components/BudgetTransactionList";
-import Toast from "../components/Toast";
+import { View, Text, FlatList, StyleSheet, Modal } from "react-native";
+import ButtonBudget from "../components/ButtonBudget";
+import TransactionForm, { TransactionFormValues } from "../components/form/TransactionForm";
+
+type Transaction = {
+  id: string;
+  position: "depense" | "revenu";
+  categorieId: string;
+  categorie: string;
+  libelles: { nom: string; montant: number }[];
+  commentaire?: string;
+  date: Date;
+};
+
+type Categorie = {
+  id: string;
+  nom: string;
+  icone: string;
+  couleur: string;
+};
 
 export default function BudgetScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [showForm, setShowForm] = useState<"revenu" | "depense" | null>(null);
-  const [toast, setToast] = useState<{
-    visible: boolean;
-    message: string;
-    type: "success" | "error";
-  }>({
-    visible: false,
-    message: "",
-    type: "success",
-  });
+  const [categories, setCategories] = useState<Categorie[]>([
+    { id: "1", nom: "Alimentation", icone: "🍕", couleur: "#EF4444" },
+    { id: "2", nom: "Transport", icone: "🚗", couleur: "#3B82F6" },
+    { id: "3", nom: "Loisirs", icone: "🎮", couleur: "#8B5CF6" },
+    { id: "4", nom: "Santé", icone: "💊", couleur: "#10B981" },
+    { id: "5", nom: "Salaire", icone: "💼", couleur: "#22C55E" },
+  ]);
+  const [showForm, setShowForm] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Charger les transactions du module "budget"
-  useEffect(() => {
-    fetchTransactionsByModule("budget")
-      .then(setTransactions)
-      .catch((err) => console.error("Erreur chargement budget:", err));
-  }, []);
-
-  // Calculer les totaux
-  const totalRevenus = transactions
-    .filter((tx) => tx.type === "revenu")
-    .reduce((sum, tx) => sum + tx.montant, 0);
-
-  const totalDepenses = transactions
-    .filter((tx) => tx.type === "depense")
-    .reduce((sum, tx) => sum + tx.montant, 0);
-
-  const solde = totalRevenus - totalDepenses;
-
-  // Ajouter une ou plusieurs transactions
-  const handleAdded = (newTxs: Transaction[]) => {
-    setTransactions((prev) => [...prev, ...newTxs]);
-    setToast({
-      visible: true,
-      message: "Transaction planifiée ajoutée !",
-      type: "success",
-    });
+  // Ouvre le formulaire
+  const handleOpenForm = () => {
+    setShowForm(true);
   };
 
-  // Supprimer une transaction
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteTransaction(id);
-      setTransactions((prev) => prev.filter((tx) => tx.id !== id));
-      setToast({
-        visible: true,
-        message: "Transaction supprimée",
-        type: "success",
-      });
-    } catch (error) {
-      console.error("Erreur suppression:", error);
-      setToast({
-        visible: true,
-        message: "Échec de suppression",
-        type: "error",
-      });
-    }
+  // Ferme le formulaire
+  const handleCloseForm = () => {
+    setShowForm(false);
   };
 
-  const hideToast = () => {
-    setToast((prev) => ({ ...prev, visible: false }));
+  // Ajoute une transaction à la liste
+  const handleSubmitTransaction = async (values: TransactionFormValues) => {
+    setSubmitting(true);
+    
+    // Simulation d'une requête réseau
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const selectedCategory = categories.find(c => c.id === values.categorieId);
+    
+    const newTransaction: Transaction = {
+      id: Date.now().toString(),
+      position: values.position,
+      categorieId: values.categorieId,
+      categorie: selectedCategory?.nom || "Autre",
+      libelles: values.libelles,
+      commentaire: values.commentaire,
+      date: values.date,
+    };
+
+    setTransactions([newTransaction, ...transactions]);
+    setSubmitting(false);
+    setShowForm(false);
+  };
+
+  // Ajoute une nouvelle catégorie
+  const handleAddCategory = async (name: string, position: "depense" | "revenu") => {
+    setLoadingCategories(true);
+    
+    // Simulation d'une requête réseau
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const newCategory: Categorie = {
+      id: Date.now().toString(),
+      nom: name,
+      icone: position === "depense" ? "📦" : "💵",
+      couleur: position === "depense" ? "#F59E0B" : "#06B6D4",
+    };
+
+    setCategories([...categories, newCategory]);
+    setLoadingCategories(false);
+  };
+
+  const renderItem = ({ item }: { item: Transaction }) => {
+    const totalMontant = item.libelles.reduce((sum, l) => sum + l.montant, 0);
+    
+    return (
+      <View style={styles.transactionCard}>
+        <View style={styles.transactionHeader}>
+          <Text style={styles.transactionTitle}>
+            {item.position === "depense" ? "💸" : "💰"} {item.categorie}
+          </Text>
+          <Text style={[
+            styles.transactionTotal,
+            item.position === "depense" ? styles.depenseColor : styles.revenuColor
+          ]}>
+            {item.position === "depense" ? "-" : "+"}{totalMontant.toLocaleString()} FCFA
+          </Text>
+        </View>
+        
+        {item.libelles.map((l, i) => (
+          <Text key={i} style={styles.transactionDetail}>
+            • {l.nom} — {l.montant.toLocaleString()} FCFA
+          </Text>
+        ))}
+        
+        {item.commentaire ? (
+          <Text style={styles.transactionComment}>💬 {item.commentaire}</Text>
+        ) : null}
+        
+        <Text style={styles.transactionDate}>
+          {item.date.toLocaleDateString("fr-FR", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })}
+        </Text>
+      </View>
+    );
   };
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={true}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Titre */}
-        <Title_Budget />
+      <Text style={styles.header}>Budget</Text>
 
-        {/* Bulles récapitulatives */}
-        <BudgetBubbles
-          totalRevenus={totalRevenus}
-          totalDepenses={totalDepenses}
-          solde={solde}
-        />
-
-        {/* Boutons Dépense / Revenu */}
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={[styles.btn, showForm === "depense" && styles.btnActiveDepense]}
-            onPress={() => setShowForm(showForm === "depense" ? null : "depense")}
-          >
-            <Text style={styles.btnText}>Planifier une sortie d'argent (Dépense)</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.btn, showForm === "revenu" && styles.btnActiveRevenu]}
-            onPress={() => setShowForm(showForm === "revenu" ? null : "revenu")}
-          >
-            <Text style={styles.btnText}>Planifier une entrée d'argent (Revenu)</Text>
-          </TouchableOpacity>
+      {/* Résumé */}
+      {transactions.length > 0 && (
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Revenus</Text>
+            <Text style={[styles.summaryValue, styles.revenuColor]}>
+              +{transactions
+                .filter(t => t.position === "revenu")
+                .reduce((sum, t) => sum + t.libelles.reduce((s, l) => s + l.montant, 0), 0)
+                .toLocaleString()} FCFA
+            </Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Dépenses</Text>
+            <Text style={[styles.summaryValue, styles.depenseColor]}>
+              -{transactions
+                .filter(t => t.position === "depense")
+                .reduce((sum, t) => sum + t.libelles.reduce((s, l) => s + l.montant, 0), 0)
+                .toLocaleString()} FCFA
+            </Text>
+          </View>
         </View>
+      )}
 
-        {/* Formulaire d'ajout */}
-        {showForm && (
-          <AddBudgetTransaction
-            type={showForm}
-            onAdded={handleAdded}
-            onClose={() => setShowForm(null)}
-          />
-        )}
-
-        {/* Liste des transactions */}
-        <BudgetTransactionList transactions={transactions} onDelete={handleDelete} />
-      </ScrollView>
-
-      {/* Toast */}
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        visible={toast.visible}
-        onHide={hideToast}
+      {/* Liste des transactions */}
+      <FlatList
+        data={transactions}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>📊</Text>
+            <Text style={styles.emptyTitle}>Aucune transaction</Text>
+            <Text style={styles.emptyText}>
+              Appuyez sur le bouton + pour ajouter votre première transaction
+            </Text>
+          </View>
+        }
+        contentContainerStyle={{ paddingBottom: 120 }}
       />
+
+      {/* Bouton + */}
+      {!showForm && <ButtonBudget onPress={handleOpenForm} />}
+
+      {/* Formulaire TransactionForm */}
+      <Modal
+        visible={showForm}
+        animationType="slide"
+        onRequestClose={handleCloseForm}
+      >
+        <TransactionForm
+          categories={categories}
+          loadingCategories={loadingCategories}
+          showDate={true}
+          submitting={submitting}
+          onSubmit={handleSubmitTransaction}
+          onAddCategory={handleAddCategory}
+          onClose={handleCloseForm}
+        />
+      </Modal>
     </View>
   );
 }
@@ -134,40 +196,124 @@ export default function BudgetScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 16,
+    paddingTop: 50,
   },
-  scrollView: {
+  header: {
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 20,
+    color: "#111827",
+  },
+  summaryCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  summaryItem: {
     flex: 1,
+    alignItems: "center",
   },
-  scrollContent: {
-    padding: 15,
-    paddingBottom: 100, // Pour éviter que le contenu soit caché par le Bottom Tab
+  summaryLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6B7280",
+    marginBottom: 6,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  headerButtons: {
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  summaryDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: "#E5E7EB",
+    marginHorizontal: 16,
+  },
+  revenuColor: {
+    color: "#22C55E",
+  },
+  depenseColor: {
+    color: "#EF4444",
+  },
+  transactionCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  transactionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 15,
-    marginTop: 15,
-    gap: 10,
+    alignItems: "center",
+    marginBottom: 12,
   },
-  btn: {
-    flex: 1,
-    padding: 12,
-    backgroundColor: "#e5e7eb",
-    borderRadius: 12,
+  transactionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  transactionTotal: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  transactionDetail: {
+    fontSize: 14,
+    color: "#374151",
+    marginBottom: 4,
+    paddingLeft: 8,
+  },
+  transactionComment: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 8,
+    fontStyle: "italic",
+    backgroundColor: "#F9FAFB",
+    padding: 8,
+    borderRadius: 6,
+  },
+  transactionDate: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    marginTop: 8,
+    textAlign: "right",
+  },
+  emptyState: {
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 40,
   },
-  btnText: {
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  emptyText: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
+    color: "#6B7280",
     textAlign: "center",
-  },
-  btnActiveDepense: {
-    backgroundColor: "#ef4444",
-  },
-  btnActiveRevenu: {
-    backgroundColor: "#10b981",
+    lineHeight: 20,
   },
 });
