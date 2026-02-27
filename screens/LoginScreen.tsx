@@ -118,7 +118,7 @@ export default function LoginScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("https://moonit-backend-10.onrender.com/healthcheck/")
+    fetch("http://127.0.0.1:8000/api/ping/")
       .then(() => console.log("Backend réveillé ✅"))
       .catch(() => console.log("Serveur en veille..."));
   }, []);

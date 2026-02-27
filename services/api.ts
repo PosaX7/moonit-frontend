@@ -2,7 +2,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // 🔗 URL du backend Django
-export const API_URL = "https://moonit-backend-10.onrender.com/api";
+export const API_URL = "http://127.0.0.1:8000/api";
 
 // ============================
   // TYPES
@@ -112,6 +112,7 @@ export const api = axios.create({
 
 api.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem("token");
+  console.log("🔑 Token:", token ? token.substring(0, 20) + "..." : "AUCUN");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -128,7 +129,10 @@ export async function registerUser(username: string, email: string, password: st
 export async function loginUser(username: string, password: string) {
   const res = await axios.post(`${API_URL}/auth/login/`, { username, password });
   const { access, refresh } = res.data;
-  if (access) await AsyncStorage.setItem("token", access);
+  if (access) {
+    await AsyncStorage.setItem("token", access);
+    console.log("✅ Token sauvegardé:", access.substring(0, 20) + "...");
+  }
   if (refresh) await AsyncStorage.setItem("refreshToken", refresh);
   return res.data;
 }
@@ -281,13 +285,10 @@ export async function fetchStatistiques(params?: {
 export const getTransactions = fetchTransactions;
 export const fetchTransactionsByModule = fetchTransactionsByVoLet;
 
-
-
 // ============================
-// BUDJET TRANSACTIONS
+// BUDGET TRANSACTIONS
 // ============================
 
-// --- Fetch transactions budget ---
 export async function fetchBudgetTransactions(): Promise<Transaction[]> {
   const res = await api.get("/transactions/?volet=budget");
   return res.data;
